@@ -37,8 +37,3 @@ app.get("/api/v1", authMiddleware, (req, res) => {
 });
 
 module.exports = app;
-
-
-
-
-//vfkufjby;oynollm---------->change>>
