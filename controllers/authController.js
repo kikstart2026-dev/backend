@@ -118,6 +118,7 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
+<<<<<<< HEAD
     // 1️⃣ Basic validation
     if (!email || !otp) {
       return res.status(400).json({
@@ -128,6 +129,10 @@ exports.otpVerify = async (req, res) => {
     // 2️⃣ Find user (safe email format)
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
+=======
+    const user = await User.findOne({ 
+      email: email.trim().toLowerCase() 
+>>>>>>> 16e7bbecfed18cdd1852812f0970e0030b8f8481
     });
 
     if (!user) {
@@ -171,7 +176,13 @@ exports.otpVerify = async (req, res) => {
 
     await user.save();
 
+<<<<<<< HEAD
     // 8️⃣ Send welcome mail (optional)
+=======
+    // ✅ GENERATE TOKEN HERE
+    const token = generateToken(user);
+
+>>>>>>> 16e7bbecfed18cdd1852812f0970e0030b8f8481
     await sendMail(
       user.email,
       "🎉 Welcome to KikStart!",
@@ -183,8 +194,21 @@ exports.otpVerify = async (req, res) => {
       )
     );
 
+<<<<<<< HEAD
     return res.status(200).json({
       message: "Account verified successfully",
+=======
+    // ✅ SEND TOKEN IN RESPONSE
+    res.status(200).json({ 
+      message: "Account verified successfully",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role
+      }
+>>>>>>> 16e7bbecfed18cdd1852812f0970e0030b8f8481
     });
 
   } catch (error) {
@@ -281,6 +305,12 @@ exports.login = async (req, res) => {
 
     if (!user)
       return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
+    }
 
     const checkPassword = await bcrypt.compare(password, user.password);
 
