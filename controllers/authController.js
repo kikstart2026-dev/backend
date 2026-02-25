@@ -79,7 +79,7 @@ exports.signUp = async (req, res) => {
 
     await User.create({
       fullname,
-      email,
+      email: email.trim().toLowerCase(),  // ✅ FIX
       phone,
       location,
       passcode,
@@ -118,7 +118,7 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({  email: email.trim().toLowerCase() });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -291,8 +291,8 @@ exports.logout = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ 
-      email: email.trim().toLowerCase() 
+    const user = await User.findOne({
+      email: email.trim().toLowerCase()
     });
 
     if (!user) {
@@ -350,7 +350,7 @@ exports.forgotPassword = async (req, res) => {
         "Password Reset OTP",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <h1>${otpData.otp}</h1>
-         <p>Valid for 5 minutes ⏳</p>`
+         <p>Valid for 30 seconds ⏳</p>`
       )
     );
 
@@ -374,7 +374,7 @@ exports.resetPassword = async (req, res) => {
         message: "Email, OTP and new password are required",
       });
     }
-    if (password !== confirmpass){
+    if (password !== confirmpass) {
       return res.status(400).json({
         message: "You should give your confirm pass as similar to your password !",
       });
@@ -426,4 +426,3 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-//bhbjkbhkjbh
