@@ -118,7 +118,9 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({  email: email.trim().toLowerCase() });
+    const user = await User.findOne({ 
+      email: email.trim().toLowerCase() 
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -133,6 +135,9 @@ exports.otpVerify = async (req, res) => {
     user.otpExpiry = undefined;
     await user.save();
 
+    // ✅ GENERATE TOKEN HERE
+    const token = generateToken(user);
+
     await sendMail(
       user.email,
       "🎉 Welcome to KikStart!",
@@ -144,7 +149,18 @@ exports.otpVerify = async (req, res) => {
       )
     );
 
-    res.status(200).json({ message: "Account verified successfully" });
+    // ✅ SEND TOKEN IN RESPONSE
+    res.status(200).json({ 
+      message: "Account verified successfully",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role
+      }
+    });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -239,6 +255,12 @@ exports.login = async (req, res) => {
 
     if (!user)
       return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
+    }
 
     const checkPassword = await bcrypt.compare(password, user.password);
 
