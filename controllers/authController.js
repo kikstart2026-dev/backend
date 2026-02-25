@@ -118,21 +118,60 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({  email: email.trim().toLowerCase() });
+    // 1️⃣ Basic validation
+    if (!email || !otp) {
+      return res.status(400).json({
+        message: "Email and OTP are required",
+      });
+    }
+
+    // 2️⃣ Find user (safe email format)
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    if (user.otp !== Number(otp) || user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    // 3️⃣ Check if already verified
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
     }
 
+    // 4️⃣ Check OTP exists
+    if (!user.otp || !user.otpExpiry) {
+      return res.status(400).json({
+        message: "OTP not found. Please request a new one.",
+      });
+    }
+
+    // 5️⃣ Check expiry first
+    if (user.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        message: "OTP expired",
+      });
+    }
+
+    // 6️⃣ Check OTP match
+    if (user.otp !== Number(otp)) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    // 7️⃣ Update user
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
+
     await user.save();
 
+    // 8️⃣ Send welcome mail (optional)
     await sendMail(
       user.email,
       "🎉 Welcome to KikStart!",
@@ -144,9 +183,14 @@ exports.otpVerify = async (req, res) => {
       )
     );
 
-    res.status(200).json({ message: "Account verified successfully" });
+    return res.status(200).json({
+      message: "Account verified successfully",
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
 
