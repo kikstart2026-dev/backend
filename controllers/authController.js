@@ -250,29 +250,32 @@ exports.login = async (req, res) => {
     if (!checkPassword)
       return res.status(401).json({ message: "Incorrect password" });
 
-    const token = generateToken(user);
+    // 🔥 Generate OTP using existing function
+    const otpData = generateOtp();
 
+    user.otp = otpData.otp;
+    user.otpExpiry = otpData.expiry;
+    await user.save();
+
+    // 🔥 Send OTP Mail
     await sendMail(
       user.email,
-      "👋 Welcome Back to KikStart",
+      "🔐 Login OTP - KikStart",
       emailTemplate(
-        "We Missed You 😍",
+        "Login Verification",
         `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You just logged in.</p>`
+         <p>Your Login OTP is:</p>
+         <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
+         <p>Valid for 30 sec ⏳</p>`
       )
     );
 
     res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        fullname: user.fullname,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
+      message: "Login OTP sent to your email",
+      requiresOtp: true,
+      email: user.email,
     });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
