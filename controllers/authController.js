@@ -14,7 +14,7 @@ const generateToken = (user) => {
 
 // ================= OTP GENERATOR =================
 const generateOtp = () => {
-  const otp = Math.floor(100000 + Math.random() * 900000); //4 digit code
+  const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
   const expiry = Date.now() + 30 * 1000; //30 sec valid
   return { otp, expiry };
 };
@@ -249,8 +249,6 @@ exports.resendOtp = async (req, res) => {
     });
   }
 };
-
-
 
 // =================================================
 // ================= LOGIN =========================
