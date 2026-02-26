@@ -14,12 +14,13 @@ const generateToken = (user) => {
 
 // ================= OTP GENERATOR =================
 const generateOtp = () => {
-  const otp = Math.floor(100000 + Math.random() * 900000); //4 digit code
+  const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
   const expiry = Date.now() + 30 * 1000; //30 sec valid
   return { otp, expiry };
 };
 
 // ================= EMAIL TEMPLATE =================
+
 const emailTemplate = (title, content) => {
   return `
   <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
@@ -34,8 +35,6 @@ const emailTemplate = (title, content) => {
   </div>
   `;
 };
-
-
 
 // =================================================
 // ================= SIGNUP ========================
@@ -79,7 +78,7 @@ exports.signUp = async (req, res) => {
 
     await User.create({
       fullname,
-      email,
+      email: email.trim().toLowerCase(),  // ✅ FIX
       phone,
       location,
       passcode,
@@ -109,8 +108,6 @@ exports.signUp = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= OTP VERIFY ====================
 // =================================================
@@ -118,20 +115,53 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ 
+      email: email.trim().toLowerCase() 
+    });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    if (user.otp !== Number(otp) || user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    // 3️⃣ Check if already verified
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
     }
 
+    // 4️⃣ Check OTP exists
+    if (!user.otp || !user.otpExpiry) {
+      return res.status(400).json({
+        message: "OTP not found. Please request a new one.",
+      });
+    }
+
+    // 5️⃣ Check expiry first
+    if (user.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        message: "OTP expired",
+      });
+    }
+
+    // 6️⃣ Check OTP match
+    if (user.otp !== Number(otp)) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    // 7️⃣ Update user
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
+
     await user.save();
+
+    // ✅ GENERATE TOKEN HERE
+    const token = generateToken(user);
 
     await sendMail(
       user.email,
@@ -144,13 +174,24 @@ exports.otpVerify = async (req, res) => {
       )
     );
 
-    res.status(200).json({ message: "Account verified successfully" });
+    // ✅ SEND TOKEN IN RESPONSE
+    res.status(200).json({ 
+      message: "Account verified successfully",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role
+      }
+    });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
-
-
 
 // =================================================
 // ================= RESEND OTP ====================
@@ -206,8 +247,6 @@ exports.resendOtp = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= LOGIN =========================
 // =================================================
@@ -240,45 +279,47 @@ exports.login = async (req, res) => {
     if (!user)
       return res.status(404).json({ message: "User not found" });
 
-    if (!user.isVerified)
-      return res
-        .status(403)
-        .json({ message: "Please verify your account first" });
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
+    }
 
     const checkPassword = await bcrypt.compare(password, user.password);
 
     if (!checkPassword)
       return res.status(401).json({ message: "Incorrect password" });
 
-    const token = generateToken(user);
+    // 🔥 Generate OTP using existing function
+    const otpData = generateOtp();
 
+    user.otp = otpData.otp;
+    user.otpExpiry = otpData.expiry;
+    await user.save();
+
+    // 🔥 Send OTP Mail
     await sendMail(
       user.email,
-      "👋 Welcome Back to KikStart",
+      "🔐 Login OTP - KikStart",
       emailTemplate(
-        "We Missed You 😍",
+        "Login Verification",
         `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You just logged in.</p>`
+         <p>Your Login OTP is:</p>
+         <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
+         <p>Valid for 30 sec ⏳</p>`
       )
     );
 
     res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        fullname: user.fullname,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
+      message: "Login OTP sent to your email",
+      requiresOtp: true,
+      email: user.email,
     });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= LOGOUT ========================
@@ -291,8 +332,8 @@ exports.logout = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ 
-      email: email.trim().toLowerCase() 
+    const user = await User.findOne({
+      email: email.trim().toLowerCase()
     });
 
     if (!user) {
@@ -324,8 +365,6 @@ exports.logout = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= FORGOT PASSWORD ===============
 // =================================================
@@ -350,7 +389,7 @@ exports.forgotPassword = async (req, res) => {
         "Password Reset OTP",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <h1>${otpData.otp}</h1>
-         <p>Valid for 5 minutes ⏳</p>`
+         <p>Valid for 30 seconds ⏳</p>`
       )
     );
 
@@ -359,8 +398,6 @@ exports.forgotPassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= RESET PASSWORD ================
@@ -374,7 +411,7 @@ exports.resetPassword = async (req, res) => {
         message: "Email, OTP and new password are required",
       });
     }
-    if (password !== confirmpass){
+    if (password !== confirmpass) {
       return res.status(400).json({
         message: "You should give your confirm pass as similar to your password !",
       });
@@ -425,3 +462,4 @@ exports.resetPassword = async (req, res) => {
     });
   }
 };
+
