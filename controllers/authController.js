@@ -20,6 +20,7 @@ const generateOtp = () => {
 };
 
 // ================= EMAIL TEMPLATE =================
+
 const emailTemplate = (title, content) => {
   return `
   <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
@@ -34,8 +35,6 @@ const emailTemplate = (title, content) => {
   </div>
   `;
 };
-
-
 
 // =================================================
 // ================= SIGNUP ========================
@@ -109,8 +108,6 @@ exports.signUp = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= OTP VERIFY ====================
 // =================================================
@@ -118,21 +115,8 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-<<<<<<< HEAD
-    // 1️⃣ Basic validation
-    if (!email || !otp) {
-      return res.status(400).json({
-        message: "Email and OTP are required",
-      });
-    }
-
-    // 2️⃣ Find user (safe email format)
-    const user = await User.findOne({
-      email: email.trim().toLowerCase(),
-=======
     const user = await User.findOne({ 
       email: email.trim().toLowerCase() 
->>>>>>> 16e7bbecfed18cdd1852812f0970e0030b8f8481
     });
 
     if (!user) {
@@ -176,13 +160,9 @@ exports.otpVerify = async (req, res) => {
 
     await user.save();
 
-<<<<<<< HEAD
-    // 8️⃣ Send welcome mail (optional)
-=======
     // ✅ GENERATE TOKEN HERE
     const token = generateToken(user);
 
->>>>>>> 16e7bbecfed18cdd1852812f0970e0030b8f8481
     await sendMail(
       user.email,
       "🎉 Welcome to KikStart!",
@@ -194,10 +174,6 @@ exports.otpVerify = async (req, res) => {
       )
     );
 
-<<<<<<< HEAD
-    return res.status(200).json({
-      message: "Account verified successfully",
-=======
     // ✅ SEND TOKEN IN RESPONSE
     res.status(200).json({ 
       message: "Account verified successfully",
@@ -208,7 +184,6 @@ exports.otpVerify = async (req, res) => {
         email: user.email,
         role: user.role
       }
->>>>>>> 16e7bbecfed18cdd1852812f0970e0030b8f8481
     });
 
   } catch (error) {
@@ -217,8 +192,6 @@ exports.otpVerify = async (req, res) => {
     });
   }
 };
-
-
 
 // =================================================
 // ================= RESEND OTP ====================
@@ -348,8 +321,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= LOGOUT ========================
 // =================================================
@@ -394,8 +365,6 @@ exports.logout = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= FORGOT PASSWORD ===============
 // =================================================
@@ -429,8 +398,6 @@ exports.forgotPassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= RESET PASSWORD ================
