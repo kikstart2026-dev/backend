@@ -78,7 +78,7 @@ exports.signUp = async (req, res) => {
 
     await User.create({
       fullname,
-      email: email.trim().toLowerCase(),  // ✅ FIX
+      email: email.trim().toLowerCase(),
       phone,
       location,
       passcode,
