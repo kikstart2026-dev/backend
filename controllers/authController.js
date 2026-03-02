@@ -20,6 +20,7 @@ const generateOtp = () => {
 };
 
 // ================= EMAIL TEMPLATE =================
+
 const emailTemplate = (title, content) => {
   return `
   <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
@@ -34,8 +35,6 @@ const emailTemplate = (title, content) => {
   </div>
   `;
 };
-
-
 
 // =================================================
 // ================= SIGNUP ========================
@@ -109,8 +108,6 @@ exports.signUp = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= OTP VERIFY ====================
 // =================================================
@@ -123,16 +120,44 @@ exports.otpVerify = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    if (user.otp !== Number(otp) || user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    // 3️⃣ Check if already verified
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
     }
 
+    // 4️⃣ Check OTP exists
+    if (!user.otp || !user.otpExpiry) {
+      return res.status(400).json({
+        message: "OTP not found. Please request a new one.",
+      });
+    }
+
+    // 5️⃣ Check expiry first
+    if (user.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        message: "OTP expired",
+      });
+    }
+
+    // 6️⃣ Check OTP match
+    if (user.otp !== Number(otp)) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    // 7️⃣ Update user
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
+
     await user.save();
 
     // ✅ GENERATE TOKEN HERE
@@ -162,11 +187,11 @@ exports.otpVerify = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
-
-
 
 // =================================================
 // ================= RESEND OTP ====================
@@ -221,8 +246,6 @@ exports.resendOtp = async (req, res) => {
     });
   }
 };
-
-
 
 // =================================================
 // ================= LOGIN =========================
@@ -298,8 +321,6 @@ exports.login = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= LOGOUT ========================
 // =================================================
@@ -344,8 +365,6 @@ exports.logout = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= FORGOT PASSWORD ===============
 // =================================================
@@ -379,8 +398,6 @@ exports.forgotPassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= RESET PASSWORD ================

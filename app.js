@@ -5,6 +5,7 @@ const authMiddleware = require("./middleware/authMiddleware");
 const AuthRouter = require("./routes/authRoutes");
 const enqRouter = require("./routes/EnquiryForm/enquiryRoute");
 const contactRouter = require("./routes/ContactForm/contactRoute");
+const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute")
 
 require("dotenv").config();
 
@@ -22,6 +23,8 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+app.use("/api/v1", AllHeadingRouter);
+
 // Routes
 app.use("/api/v1", AuthRouter);
 
@@ -35,5 +38,6 @@ app.get("/api/v1", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
+
 
 module.exports = app;
