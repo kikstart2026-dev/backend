@@ -26,6 +26,13 @@ const allowedMimes = {
     ],
     pdf: [
         "application/pdf"
+    ],
+    video: [
+        "video/mp4",
+        "video/mkv",
+        "video/x-matroska",
+        "video/quicktime",   // mov
+        "video/x-msvideo"    // avi
     ]
 };
 
@@ -34,6 +41,7 @@ const getUploadFolder = (mimetype) => {
     if (allowedMimes.image.includes(mimetype)) return "images";
     if (allowedMimes.audio.includes(mimetype)) return "audio";
     if (allowedMimes.pdf.includes(mimetype)) return "pdf";
+    if (allowedMimes.video.includes(mimetype)) return "videos";
     return "others";
 };
 
@@ -43,7 +51,6 @@ const storage = multer.diskStorage({
         const folderName = getUploadFolder(file.mimetype);
         const uploadPath = path.join(BASE_UPLOAD_PATH, folderName);
 
-        // Create folder if not exists
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true });
         }
@@ -67,13 +74,14 @@ const fileFilter = (req, file, cb) => {
     const allAllowedMimes = [
         ...allowedMimes.image,
         ...allowedMimes.audio,
-        ...allowedMimes.pdf
+        ...allowedMimes.pdf,
+        ...allowedMimes.video
     ];
 
     if (allAllowedMimes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error("Only images, audio files, and PDFs are allowed!"), false);
+        cb(new Error("Only images, audio, video files and PDFs are allowed!"), false);
     }
 };
 
@@ -81,7 +89,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
     storage,
     limits: {
-        fileSize: 50 * 1024 * 1024 // 50MB
+        fileSize: 100 * 1024 * 1024 // 100MB for video
     },
     fileFilter
 });
