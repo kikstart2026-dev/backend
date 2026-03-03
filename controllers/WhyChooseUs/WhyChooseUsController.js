@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
-const HomeBannerModel = require("../../models/HomeBanner/HomeBannerModel");
+const WhyChooseUsCardModel = require("../../models/WhyChooseUs/WhyChooseUsModel");
 
 
 // ==========================
 // ✅ CREATE
 // ==========================
-exports.createHomeBanner = async (req, res) => {
+exports.createCard = async (req, res) => {
   try {
-    const { headingId } = req.body;
+    const { headingId, title, description, color } = req.body;
 
     if (!headingId) {
       return res.status(400).json({
@@ -19,20 +19,38 @@ exports.createHomeBanner = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         status: "error",
-        message: "Image file is required",
+        message: "Icon file is required",
+      });
+    }
+    
+    if (!title) {
+      return res.status(400).json({
+        status: "error",
+        message: "title is required",
       });
     }
 
-    const newBanner = await HomeBannerModel.create({
+    if (!color) {
+      return res.status(400).json({
+        status: "error",
+        message: "color is required",
+      });
+    }
+
+    const newCard = await WhyChooseUsCardModel.create({
       headingId,
-      image: `/uploads/images/${req.file.filename}`, // ✅ CLEAN PATH
+      icon: `/uploads/images/${req.file.filename}`,
+      title,
+      description,
+      color,
     });
 
     res.status(201).json({
       status: "success",
-      message: "Home Banner created successfully",
-      data: newBanner,
+      message: "Why Choose Us card created successfully",
+      data: newCard,
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -45,9 +63,9 @@ exports.createHomeBanner = async (req, res) => {
 // ==========================
 // ✅ GET ALL (Aggregate)
 // ==========================
-exports.getAllHomeBanner = async (req, res) => {
+exports.getAllCards = async (req, res) => {
   try {
-    const data = await HomeBannerModel.aggregate([
+    const data = await WhyChooseUsCardModel.aggregate([
       {
         $lookup: {
           from: "headings",
@@ -59,9 +77,13 @@ exports.getAllHomeBanner = async (req, res) => {
       { $unwind: "$headingData" },
       {
         $project: {
-          image: 1,
+          icon: 1,
+          title: 1,
+          description: 1,
+          color: 1,
           createdAt: 1,
           updatedAt: 1,
+          "headingData._id": 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
@@ -74,6 +96,7 @@ exports.getAllHomeBanner = async (req, res) => {
       results: data.length,
       data,
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -86,8 +109,9 @@ exports.getAllHomeBanner = async (req, res) => {
 // ==========================
 // ✅ GET BY ID
 // ==========================
-exports.getHomeBannerById = async (req, res) => {
+exports.getCardById = async (req, res) => {
   try {
+
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         status: "error",
@@ -95,7 +119,7 @@ exports.getHomeBannerById = async (req, res) => {
       });
     }
 
-    const data = await HomeBannerModel.aggregate([
+    const data = await WhyChooseUsCardModel.aggregate([
       {
         $match: {
           _id: new mongoose.Types.ObjectId(req.params.id),
@@ -112,7 +136,10 @@ exports.getHomeBannerById = async (req, res) => {
       { $unwind: "$headingData" },
       {
         $project: {
-          image: 1,
+          icon: 1,
+          title: 1,
+          description: 1,
+          color: 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
@@ -123,7 +150,7 @@ exports.getHomeBannerById = async (req, res) => {
     if (!data.length) {
       return res.status(404).json({
         status: "error",
-        message: "HomeBanner not found",
+        message: "Card not found",
       });
     }
 
@@ -131,6 +158,7 @@ exports.getHomeBannerById = async (req, res) => {
       status: "success",
       data: data[0],
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -143,8 +171,9 @@ exports.getHomeBannerById = async (req, res) => {
 // ==========================
 // ✅ UPDATE
 // ==========================
-exports.updateHomeBanner = async (req, res) => {
+exports.updateCard = async (req, res) => {
   try {
+
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         status: "error",
@@ -152,36 +181,38 @@ exports.updateHomeBanner = async (req, res) => {
       });
     }
 
-    const { headingId } = req.body;
+    const { headingId, title, description, color } = req.body;
 
     let updateData = {};
 
-    if (headingId) {
-      updateData.headingId = headingId;
-    }
+    if (headingId) updateData.headingId = headingId;
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (color) updateData.color = color;
 
     if (req.file) {
-      updateData.image = `/uploads/images/${req.file.filename}`; // ✅ CLEAN PATH
+      updateData.icon = `/uploads/images/${req.file.filename}`;
     }
 
-    const updatedData = await HomeBannerModel.findByIdAndUpdate(
+    const updatedData = await WhyChooseUsCardModel.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { returnDocument: "after" } // ✅ mongoose warning fix
+      { new: true }
     );
 
     if (!updatedData) {
       return res.status(404).json({
         status: "error",
-        message: "Home Banner not found",
+        message: "Card not found",
       });
     }
 
     res.status(200).json({
       status: "success",
-      message: "Home Banner updated successfully",
+      message: "Card updated successfully",
       data: updatedData,
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -194,21 +225,23 @@ exports.updateHomeBanner = async (req, res) => {
 // ==========================
 // ✅ DELETE SINGLE
 // ==========================
-exports.singleDeleteHomeBanner = async (req, res) => {
+exports.singleDeleteCard = async (req, res) => {
   try {
-    const data = await HomeBannerModel.findByIdAndDelete(req.params.id);
+
+    const data = await WhyChooseUsCardModel.findByIdAndDelete(req.params.id);
 
     if (!data) {
       return res.status(404).json({
         status: "error",
-        message: "Home Banner not found",
+        message: "Card not found",
       });
     }
 
     res.status(200).json({
       status: "success",
-      message: "Home Banner deleted successfully",
+      message: "Card deleted successfully",
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -221,8 +254,9 @@ exports.singleDeleteHomeBanner = async (req, res) => {
 // ==========================
 // ✅ DELETE SELECTIVE
 // ==========================
-exports.selectiveDeleteHomeBanner = async (req, res) => {
+exports.selectiveDeleteCard = async (req, res) => {
   try {
+
     const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids)) {
@@ -232,15 +266,16 @@ exports.selectiveDeleteHomeBanner = async (req, res) => {
       });
     }
 
-    const result = await HomeBannerModel.deleteMany({
+    const result = await WhyChooseUsCardModel.deleteMany({
       _id: { $in: ids },
     });
 
     res.status(200).json({
       status: "success",
-      message: "Selected HomeBanners deleted",
+      message: "Selected cards deleted",
       deletedCount: result.deletedCount,
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -253,15 +288,17 @@ exports.selectiveDeleteHomeBanner = async (req, res) => {
 // ==========================
 // ✅ DELETE ALL
 // ==========================
-exports.multipleDeleteHomeBanner = async (req, res) => {
+exports.multipleDeleteCard = async (req, res) => {
   try {
-    const result = await HomeBannerModel.deleteMany({});
+
+    const result = await WhyChooseUsCardModel.deleteMany({});
 
     res.status(200).json({
       status: "success",
-      message: "All Home Banners deleted",
+      message: "All cards deleted",
       deletedCount: result.deletedCount,
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
