@@ -1,11 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const path = require("path");
+
 const authMiddleware = require("./middleware/authMiddleware");
 const AuthRouter = require("./routes/authRoutes");
 const enqRouter = require("./routes/EnquiryForm/enquiryRoute");
 const contactRouter = require("./routes/ContactForm/contactRoute");
-const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute")
+const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute");
+const HomeBannerRouter = require("./routes/HomeBanner/HomeBannerRoute");
 
 require("dotenv").config();
 
@@ -23,9 +26,18 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/api/v1", AllHeadingRouter);
+// 🔥 Static Upload Folder
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "middleware/uploads"))
+);
 
 // Routes
+app.use("/api/v1/home-banner", HomeBannerRouter);
+
+app.use("/api/v1", AllHeadingRouter);
+
+
 app.use("/api/v1", AuthRouter);
 
 app.use("/api/v1", enqRouter);
@@ -38,6 +50,5 @@ app.get("/api/v1", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
-
 
 module.exports = app;
