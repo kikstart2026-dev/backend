@@ -36,9 +36,11 @@ app.use(
 // Routes
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
-app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter); // 🔥 specific আগে
+app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter); 
 
-app.use("/api/v1", AllHeadingRouter); // 🔥 generic পরে
+app.use("/api/v1", AllHeadingRouter); 
+
+
 
 app.use("/api/v1", AuthRouter);
 
