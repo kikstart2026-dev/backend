@@ -15,7 +15,7 @@ const generateToken = (user) => {
 // ================= OTP GENERATOR =================
 const generateOtp = () => {
   const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
-  const expiry = Date.now() + 30 * 1000; //30 sec valid
+  const expiry = Date.now() + 90 * 1000; //1.5 min (90 sec) valid
   return { otp, expiry };
 };
 
@@ -96,7 +96,7 @@ exports.signUp = async (req, res) => {
         `<p>Hey <b>${fullname}</b>,</p>
          <p>Your OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
+         <p>Valid for 90 sec ⏳</p>`
       )
     );
 
@@ -232,7 +232,7 @@ exports.resendOtp = async (req, res) => {
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your new OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
+         <p>Valid for 90 sec ⏳</p>`
       )
     );
 
@@ -389,7 +389,7 @@ exports.forgotPassword = async (req, res) => {
         "Password Reset OTP",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <h1>${otpData.otp}</h1>
-         <p>Valid for 30 seconds ⏳</p>`
+         <p>Valid for 90 seconds ⏳</p>`
       )
     );
 
