@@ -7,19 +7,12 @@ const WhyChooseUsCardModel = require("../../models/WhyChooseUs/WhyChooseUsModel"
 // ==========================
 exports.createCard = async (req, res) => {
   try {
-    const { headingId, title, description, color } = req.body;
+    const { headingId, icon, title, description, color } = req.body;
 
     if (!headingId) {
       return res.status(400).json({
         status: "error",
         message: "headingId is required",
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        status: "error",
-        message: "Icon file is required",
       });
     }
     
@@ -39,7 +32,7 @@ exports.createCard = async (req, res) => {
 
     const newCard = await WhyChooseUsCardModel.create({
       headingId,
-      icon: `/uploads/images/${req.file.filename}`,
+      icon,
       title,
       description,
       color,
@@ -81,8 +74,6 @@ exports.getAllCards = async (req, res) => {
           title: 1,
           description: 1,
           color: 1,
-          createdAt: 1,
-          updatedAt: 1,
           "headingData._id": 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
@@ -111,8 +102,9 @@ exports.getAllCards = async (req, res) => {
 // ==========================
 exports.getCardById = async (req, res) => {
   try {
+    const mongoId = req.params.id;
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(mongoId)) {
       return res.status(400).json({
         status: "error",
         message: "Invalid ID format",
@@ -122,7 +114,7 @@ exports.getCardById = async (req, res) => {
     const data = await WhyChooseUsCardModel.aggregate([
       {
         $match: {
-          _id: new mongoose.Types.ObjectId(req.params.id),
+          _id: new mongoose.Types.ObjectId(mongoId),
         },
       },
       {
@@ -181,22 +173,11 @@ exports.updateCard = async (req, res) => {
       });
     }
 
-    const { headingId, title, description, color } = req.body;
-
-    let updateData = {};
-
-    if (headingId) updateData.headingId = headingId;
-    if (title) updateData.title = title;
-    if (description) updateData.description = description;
-    if (color) updateData.color = color;
-
-    if (req.file) {
-      updateData.icon = `/uploads/images/${req.file.filename}`;
-    }
+    const { headingId, icon, title, description, color } = req.body;
 
     const updatedData = await WhyChooseUsCardModel.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      { headingId, icon, title, description, color },
       { new: true }
     );
 

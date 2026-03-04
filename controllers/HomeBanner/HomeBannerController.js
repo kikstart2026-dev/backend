@@ -7,25 +7,18 @@ const HomeBannerModel = require("../../models/HomeBanner/HomeBannerModel");
 // ==========================
 exports.createHomeBanner = async (req, res) => {
   try {
-    const { headingId } = req.body;
+    const { headingId, image } = req.body;
 
-    if (!headingId) {
+    if (!headingId, !image) {
       return res.status(400).json({
         status: "error",
-        message: "headingId is required",
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        status: "error",
-        message: "Image file is required",
+        message: "headingId & image is required",
       });
     }
 
     const newBanner = await HomeBannerModel.create({
       headingId,
-      image: `/uploads/images/${req.file.filename}`, // ✅ CLEAN PATH
+      image
     });
 
     res.status(201).json({
@@ -47,26 +40,24 @@ exports.createHomeBanner = async (req, res) => {
 // ==========================
 exports.getAllHomeBanner = async (req, res) => {
   try {
-    const data = await HomeBannerModel.aggregate([
+    const data = await HomeBannerModel.aggregate([ // aggregate is a function to mearge 2 data bases and make our 1 integrated data collection
       {
         $lookup: {
-          from: "headings",
-          localField: "headingId",
-          foreignField: "_id",
-          as: "headingData",
-        },
+          from: "headings", // Importing mongo database name
+          localField: "headingId", // Importing mongo ID
+          foreignField: "_id", // present database mongo ID
+          as: "headingData", // An dummy name
+        }, // lookup is a function to run our mongodb command just like SQL commands
       },
-      { $unwind: "$headingData" },
+      { $unwind: "$headingData" }, // Unwind is works to convert an Array into an Object
       {
         $project: {
           image: 1,
-          createdAt: 1,
-          updatedAt: 1,
           "headingData._id": 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
-        },
+        }, // it is the function to show and rearrange my output data
       },
     ]);
 
@@ -89,7 +80,8 @@ exports.getAllHomeBanner = async (req, res) => {
 // ==========================
 exports.getHomeBannerById = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const mongoId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(mongoId)) {
       return res.status(400).json({
         status: "error",
         message: "Invalid ID format",
@@ -98,8 +90,8 @@ exports.getHomeBannerById = async (req, res) => {
 
     const data = await HomeBannerModel.aggregate([
       {
-        $match: {
-          _id: new mongoose.Types.ObjectId(req.params.id),
+        $match: { // it compares 2 mongo ids
+          _id: new mongoose.Types.ObjectId(mongoId),
         },
       },
       {
@@ -113,7 +105,7 @@ exports.getHomeBannerById = async (req, res) => {
       { $unwind: "$headingData" },
       {
         $project: {
-          image: 1,
+          image: 1, // if we use 0 then exclude this field it will return all fields
            "headingData._id": 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
@@ -154,22 +146,12 @@ exports.updateHomeBanner = async (req, res) => {
       });
     }
 
-    const { headingId } = req.body;
-
-    let updateData = {};
-
-    if (headingId) {
-      updateData.headingId = headingId;
-    }
-
-    if (req.file) {
-      updateData.image = `/uploads/images/${req.file.filename}`; // ✅ CLEAN PATH
-    }
+    const { headingId, image } = req.body;
 
     const updatedData = await HomeBannerModel.findByIdAndUpdate(
       req.params.id,
-      updateData,
-      { returnDocument: "after" } // ✅ mongoose warning fix
+      { headingId, image },
+      { new: true}
     );
 
     if (!updatedData) {
