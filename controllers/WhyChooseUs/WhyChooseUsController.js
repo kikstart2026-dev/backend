@@ -2,9 +2,7 @@ const mongoose = require("mongoose");
 const WhyChooseUsCardModel = require("../../models/WhyChooseUs/WhyChooseUsModel");
 
 
-// ==========================
-// ✅ CREATE
-// ==========================
+// CREATE
 exports.createCard = async (req, res) => {
   try {
     const { headingId, icon, title, description, color } = req.body;
@@ -15,7 +13,7 @@ exports.createCard = async (req, res) => {
         message: "headingId is required",
       });
     }
-    
+
     if (!title) {
       return res.status(400).json({
         status: "error",
@@ -53,11 +51,10 @@ exports.createCard = async (req, res) => {
 };
 
 
-// ==========================
-// ✅ GET ALL (Aggregate)
-// ==========================
+// GET ALL (Aggregate)
 exports.getAllCards = async (req, res) => {
   try {
+
     const data = await WhyChooseUsCardModel.aggregate([
       {
         $lookup: {
@@ -74,18 +71,36 @@ exports.getAllCards = async (req, res) => {
           title: 1,
           description: 1,
           color: 1,
-          "headingData._id": 1,
-          "headingData.subheading": 1,
-          "headingData.heading": 1,
-          "headingData.description": 1,
+          headingData: {
+            _id: "$headingData._id",
+            subheading: "$headingData.subheading",
+            heading: "$headingData.heading",
+            description: "$headingData.description",
+          },
         },
       },
     ]);
 
+    // Extract Heading
+    const heading = data.length ? data[0].headingData : null;
+
+    // Clean Cards Array
+    const cards = data.map((item) => ({
+      _id: item._id,
+      icon: item.icon,
+      title: item.title,
+      description: item.description,
+      color: item.color,
+    }));
+
     res.status(200).json({
       status: "success",
-      results: data.length,
-      data,
+      message: "Why Choose Us fetched successfully",
+      data: {
+        heading,
+        cards,
+      },
+      count: cards.length,
     });
 
   } catch (err) {
@@ -96,10 +111,7 @@ exports.getAllCards = async (req, res) => {
   }
 };
 
-
-// ==========================
-// ✅ GET BY ID
-// ==========================
+//  GET BY ID
 exports.getCardById = async (req, res) => {
   try {
     const mongoId = req.params.id;
@@ -125,7 +137,12 @@ exports.getCardById = async (req, res) => {
           as: "headingData",
         },
       },
-      { $unwind: "$headingData" },
+      {
+        $unwind: {
+          path: "$headingData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           icon: 1,
@@ -148,6 +165,7 @@ exports.getCardById = async (req, res) => {
 
     res.status(200).json({
       status: "success",
+      message: "Card fetched successfully",
       data: data[0],
     });
 
@@ -159,10 +177,7 @@ exports.getCardById = async (req, res) => {
   }
 };
 
-
-// ==========================
-// ✅ UPDATE
-// ==========================
+// UPDATE
 exports.updateCard = async (req, res) => {
   try {
 
@@ -203,11 +218,16 @@ exports.updateCard = async (req, res) => {
 };
 
 
-// ==========================
-// ✅ DELETE SINGLE
-// ==========================
+//  DELETE SINGLE
 exports.singleDeleteCard = async (req, res) => {
   try {
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid ID format",
+      });
+    }
 
     const data = await WhyChooseUsCardModel.findByIdAndDelete(req.params.id);
 
@@ -231,10 +251,7 @@ exports.singleDeleteCard = async (req, res) => {
   }
 };
 
-
-// ==========================
-// ✅ DELETE SELECTIVE
-// ==========================
+//  DELETE SELECTIVE
 exports.selectiveDeleteCard = async (req, res) => {
   try {
 
@@ -265,10 +282,7 @@ exports.selectiveDeleteCard = async (req, res) => {
   }
 };
 
-
-// ==========================
-// ✅ DELETE ALL
-// ==========================
+//  DELETE ALL
 exports.multipleDeleteCard = async (req, res) => {
   try {
 
