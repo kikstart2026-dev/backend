@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const HomeBannerSchema = new mongoose.Schema(
   {
     headingId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId, // it is to fetch the exact form of unique mongo id
       ref: "Heading",
       required: true,
     },

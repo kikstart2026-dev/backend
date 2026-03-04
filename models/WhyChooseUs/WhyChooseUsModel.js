@@ -24,7 +24,7 @@ const whyChooseUsCardSchema = new mongoose.Schema(
 
     color: {
       type: String,
-      required: true   // hex color
+      required: true
     }
   },
   { timestamps: true }
