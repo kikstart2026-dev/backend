@@ -12,6 +12,7 @@ const HomeBannerRouter = require("./routes/HomeBanner/HomeBannerRoute");
 const WhyChooseUsCardRouter = require("./routes/WhyChooseUs/WhyChooseUsRoute");
 const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
+const serviceRouter = require("./routes/Service/ServiceRoute");
 
 
 require("dotenv").config();
@@ -45,6 +46,7 @@ app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter);
 app.use("/api/v1/media", mediaRoutes);
 
 app.use("/api/v1/about-us", AboutUsRoute );
+app.use("/api/v1/service", serviceRouter);
 
 app.use("/api/v1", AllHeadingRouter);
 

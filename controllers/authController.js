@@ -1,9 +1,20 @@
+const axios = require("axios");
+const { OAuth2Client } = require("google-auth-library");
+const { google } = require("googleapis");
+
 const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../middleware/sendMail");
 
 const jwtSecret = process.env.TOKEN_SECRET;
+
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "postmessage"
+);
 
 // ================= TOKEN =================
 const generateToken = (user) => {
@@ -15,7 +26,7 @@ const generateToken = (user) => {
 // ================= OTP GENERATOR =================
 const generateOtp = () => {
   const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
-  const expiry = Date.now() + 30 * 1000; //30 sec valid
+  const expiry = Date.now() + 90 * 1000; //1.5 min (90 sec) valid
   return { otp, expiry };
 };
 
@@ -96,7 +107,7 @@ exports.signUp = async (req, res) => {
         `<p>Hey <b>${fullname}</b>,</p>
          <p>Your OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
+         <p>Valid for 90 sec ⏳</p>`
       )
     );
 
@@ -232,7 +243,7 @@ exports.resendOtp = async (req, res) => {
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your new OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
+         <p>Valid for 90 sec ⏳</p>`
       )
     );
 
@@ -389,7 +400,7 @@ exports.forgotPassword = async (req, res) => {
         "Password Reset OTP",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <h1>${otpData.otp}</h1>
-         <p>Valid for 30 seconds ⏳</p>`
+         <p>Valid for 90 seconds ⏳</p>`
       )
     );
 
@@ -463,3 +474,85 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+
+
+// =================================================
+// ============== GOOGLE SIGNUP / LOGIN ===========
+// =================================================
+exports.googleAuth = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        message: "Google code is required",
+      });
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const userRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      }
+    );
+
+    const { email, name } = userRes.data;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Google email not found",
+      });
+    }
+
+    let user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!user) {
+      user = await User.create({
+        fullname: name,
+        email: email.trim().toLowerCase(),
+        password: "google-auth",
+        isVerified: true,
+      });
+    }
+
+    const token = generateToken(user);
+
+    // ⭐ MAIL SEND SAFE CHECK
+    if (user.email) {
+      await sendMail(
+        user.email,
+        "🎉 Welcome to KikStart!",
+        emailTemplate(
+          "You're Officially In 🚀",
+          `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`
+        )
+      );
+    }
+
+    return res.status(200).json({
+      message: "Google authentication successful",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role,
+      },
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
+  }
+};
