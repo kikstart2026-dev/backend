@@ -40,11 +40,11 @@ app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter);
 
 app.use("/api/v1", AllHeadingRouter);
 
-app.use("/api/v1", AuthRouter);
-
 app.use("/api/v1", enqRouter);
 
 app.use("/api/v1", contactRouter);
+
+app.use("/api/v1", AuthRouter);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
