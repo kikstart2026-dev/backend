@@ -1,42 +1,29 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../../controllers/HomeBanner/HomeBannerController");
-const upload = require("../../middleware/uploadMiddleware");
+
+// create
+router.post("/create", controller.createHomeBanner);
 
 
-// ✅ Create (Image Upload Required)
-router.post(
-  "/create",
-  upload.single("image"),   // 🔥 image field name must match form-data key
-  controller.createHomeBanner
-);
-
-
-// ✅ Get All
+// Get All
 router.get("/", controller.getAllHomeBanner);
 
 
-// ✅ Get By ID
+// Get By ID
 router.get("/:id", controller.getHomeBannerById);
 
 
-// ✅ Update (Image Optional)
-router.put(
-  "/:id",
-  upload.single("image"),   // 🔥 new image optional
-  controller.updateHomeBanner
-);
+// Update
+router.put("/:id", controller.updateHomeBanner);
 
-
-//  Specific delete routes must come BEFORE :id
-
-// ✅ Delete Selective
+// Delete Selective
 router.delete("/select/delete", controller.selectiveDeleteHomeBanner);
 
-// ✅ Delete All
+// Delete All
 router.delete("/delete/all", controller.multipleDeleteHomeBanner);
 
-// ✅ Delete Single
+// Delete Single
 router.delete("/:id", controller.singleDeleteHomeBanner);
 
 
