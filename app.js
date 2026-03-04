@@ -9,6 +9,7 @@ const enqRouter = require("./routes/EnquiryForm/enquiryRoute");
 const contactRouter = require("./routes/ContactForm/contactRoute");
 const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute");
 const HomeBannerRouter = require("./routes/HomeBanner/HomeBannerRoute");
+const WhyChooseUsCardRouter = require("./routes/WhyChooseUs/WhyChooseUsRoute");
 
 require("dotenv").config();
 
@@ -35,8 +36,9 @@ app.use(
 // Routes
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
-app.use("/api/v1", AllHeadingRouter);
+app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter); // 🔥 specific আগে
 
+app.use("/api/v1", AllHeadingRouter); // 🔥 generic পরে
 
 app.use("/api/v1", AuthRouter);
 
