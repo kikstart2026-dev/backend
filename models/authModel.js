@@ -18,18 +18,16 @@ const userSchema = new mongoose.Schema(
 
     phone: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true
     },
 
     location: {
       type: String,
-      required: true,
     },
 
     passcode: {
       type: String,
-      required: true,
     },
 
     password: {
