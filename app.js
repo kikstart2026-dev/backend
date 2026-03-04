@@ -10,6 +10,8 @@ const contactRouter = require("./routes/ContactForm/contactRoute");
 const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute");
 const HomeBannerRouter = require("./routes/HomeBanner/HomeBannerRoute");
 const WhyChooseUsCardRouter = require("./routes/WhyChooseUs/WhyChooseUsRoute");
+const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
+
 
 require("dotenv").config();
 
@@ -34,9 +36,12 @@ app.use(
 );
 
 // Routes
+
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
 app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter);
+
+app.use("/api/v1/media", mediaRoutes);
 
 app.use("/api/v1", AllHeadingRouter);
 

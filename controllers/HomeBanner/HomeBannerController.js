@@ -7,18 +7,25 @@ const HomeBannerModel = require("../../models/HomeBanner/HomeBannerModel");
 // ==========================
 exports.createHomeBanner = async (req, res) => {
   try {
-    const { headingId, image } = req.body;
-
-    if (!headingId, !image) {
+    if (!req.body) {
       return res.status(400).json({
         status: "error",
-        message: "headingId & image is required",
+        message: "Request body is missing",
+      });
+    }
+
+    const { headingId, image } = req.body;
+
+    if (!headingId || !image) {
+      return res.status(400).json({
+        status: "error",
+        message: "headingId & image are required",
       });
     }
 
     const newBanner = await HomeBannerModel.create({
       headingId,
-      image
+      image,
     });
 
     res.status(201).json({
@@ -26,6 +33,7 @@ exports.createHomeBanner = async (req, res) => {
       message: "Home Banner created successfully",
       data: newBanner,
     });
+
   } catch (err) {
     res.status(500).json({
       status: "error",
