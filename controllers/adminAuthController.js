@@ -18,7 +18,8 @@ exports.getAllUsers = async (req, res) => {
 exports.updateUserByAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { fullname, phone, location, isVerified, role } = req.body;
+
+    const { fullname, phone, location, isVerified, role } = req.body || {};
 
     const user = await User.findById(id);
 
@@ -30,7 +31,10 @@ exports.updateUserByAdmin = async (req, res) => {
     if (phone) user.phone = phone;
     if (location) user.location = location;
 
-    // ✅ Safe boolean handling
+    if (req.file) {
+      user.image = req.file.path;
+    }
+
     if (isVerified !== undefined) {
       user.isVerified = isVerified === true || isVerified === "true";
     }

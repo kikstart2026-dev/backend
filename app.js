@@ -36,7 +36,7 @@ app.use(cookieParser());
 // 🔥 Static Upload Folder
 app.use(
   "/uploads",
-  express.static(path.join(__dirname, "/uploads"))
+  express.static(path.join(__dirname, "middleware/uploads"))
 );
 
 // Routes

@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const upload = require("../middleware/uploadMiddleware");
 
 const adminController = require("../controllers/adminAuthController");
 const { protect, adminOnly, superAdminOnly } = require("../middleware/adminMiddleware");
@@ -8,7 +9,13 @@ const { protect, adminOnly, superAdminOnly } = require("../middleware/adminMiddl
 router.get("/users", protect, adminOnly, adminController.getAllUsers);
 
 // 🔥 Only SuperAdmin can update
-router.put("/user/:id", protect, superAdminOnly, adminController.updateUserByAdmin);
+router.put(
+  "/user/:id",
+  protect,
+  superAdminOnly,
+  upload.single("image"),
+  adminController.updateUserByAdmin
+);
 
 // 🔥 Only SuperAdmin can delete single
 router.delete("/user/:id", protect, superAdminOnly, adminController.deleteSingleUser);
