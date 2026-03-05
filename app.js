@@ -14,6 +14,8 @@ const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
 const serviceRouter = require("./routes/Service/ServiceRoute");
 
+const adminAuthRouter = require("./routes/adminAuthRoutes");
+
 
 require("dotenv").config();
 
@@ -34,10 +36,12 @@ app.use(cookieParser());
 // 🔥 Static Upload Folder
 app.use(
   "/uploads",
-  express.static(path.join(__dirname, "middleware/uploads"))
+  express.static(path.join(__dirname, "/uploads"))
 );
 
 // Routes
+
+app.use("/api/v1/admin", adminAuthRouter);
 
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
