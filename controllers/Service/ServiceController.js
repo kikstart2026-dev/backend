@@ -59,7 +59,7 @@ exports.getAllService = async (req, res) => {
           as: "headingData",
         },
       },
-      { $unwind: "$headingData" },
+      { $unwind: "$headingData" }, 
       {
         $project: {
           title: 1,

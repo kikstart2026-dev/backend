@@ -39,7 +39,7 @@ exports.getAll = async (req, res) => {
             results: data.length,
             data
         });
-
+        
     } catch (err) {
         res.status(500).json({ status: "error", message: err.message });
     }
@@ -72,8 +72,7 @@ exports.update = async (req, res) => {
     try {
         const { subheading, heading, description } = req.body;
 
-        const updatedData = await HeadingModel.findByIdAndUpdate(
-            req.params.id,
+        const updatedData = await HeadingModel.findByIdAndUpdate( req.params.id,
             { subheading, heading, description },
             { new: true }
         );
@@ -96,7 +95,7 @@ exports.update = async (req, res) => {
     }
 };
 
-// Delete Single Heading
+// Delete Single Heading by Id
 exports.singleDelete = async (req, res) => {
     try {
         const data = await HeadingModel.findByIdAndDelete(req.params.id);

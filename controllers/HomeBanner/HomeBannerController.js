@@ -48,16 +48,22 @@ exports.createHomeBanner = async (req, res) => {
 // ==========================
 exports.getAllHomeBanner = async (req, res) => {
   try {
-    const data = await HomeBannerModel.aggregate([ // aggregate is a function to mearge 2 data bases and make our 1 integrated data collection
+    const data = await HomeBannerModel.aggregate([
       {
         $lookup: {
-          from: "headings", // Importing mongo database name
-          localField: "headingId", // Importing mongo ID
-          foreignField: "_id", // present database mongo ID
-          as: "headingData", // An dummy name
-        }, // lookup is a function to run our mongodb command just like SQL commands
+          from: "headings",
+          localField: "headingId",
+          foreignField: "_id",
+          as: "headingData",
+        },
       },
-      { $unwind: "$headingData" }, // Unwind is works to convert an Array into an Object
+      { $unwind: "$headingData" },
+
+      // ✅ NEWEST FIRST
+      {
+        $sort: { createdAt: -1 },
+      },
+
       {
         $project: {
           image: 1,
@@ -65,7 +71,7 @@ exports.getAllHomeBanner = async (req, res) => {
           "headingData.subheading": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
-        }, // it is the function to show and rearrange my output data
+        },
       },
     ]);
 
@@ -81,7 +87,6 @@ exports.getAllHomeBanner = async (req, res) => {
     });
   }
 };
-
 
 // ==========================
 // ✅ GET BY ID
