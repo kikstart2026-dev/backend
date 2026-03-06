@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       unique: true,
-      sparse: true
+      sparse: true,
     },
 
     location: {
@@ -33,6 +33,12 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+    },
+
+    // 🖼️ IMAGE FIELD ADD KORA HOLO
+    image: {
+      type: String, // image URL
+      default: null,
     },
 
     otp: {
@@ -50,7 +56,7 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "coach", "admin", "superadmin"],
       default: "user",
     },
   },
