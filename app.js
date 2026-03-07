@@ -14,6 +14,8 @@ const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
 const serviceRouter = require("./routes/Service/ServiceRoute");
 
+const adminAuthRouter = require("./routes/adminAuthRoutes");
+
 
 require("dotenv").config();
 
@@ -38,6 +40,8 @@ app.use(
 );
 
 // Routes
+
+app.use("/api/v1/admin", adminAuthRouter);
 
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
