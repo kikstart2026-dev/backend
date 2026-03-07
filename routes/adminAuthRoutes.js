@@ -8,6 +8,9 @@ const { protect, adminOnly, superAdminOnly } = require("../middleware/adminMiddl
 // ✅ Both admin & superadmin can view users
 router.get("/users", protect, adminOnly, adminController.getAllUsers);
 
+// ✅ Get single user by ID
+router.get("/user/:id", protect, adminOnly, adminController.getUserById);
+
 // 🔥 Only SuperAdmin can update
 router.put(
   "/user/:id",
