@@ -1,9 +1,19 @@
+const axios = require("axios");
+const { OAuth2Client } = require("google-auth-library");
+const { google } = require("googleapis");
+
 const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../middleware/sendMail");
 
 const jwtSecret = process.env.TOKEN_SECRET;
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "postmessage",
+);
 
 // ================= TOKEN =================
 const generateToken = (user) => {
@@ -15,11 +25,12 @@ const generateToken = (user) => {
 // ================= OTP GENERATOR =================
 const generateOtp = () => {
   const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
-  const expiry = Date.now() + 30 * 1000; //30 sec valid
+  const expiry = Date.now() + 90 * 1000; //1.5 min (90 sec) valid
   return { otp, expiry };
 };
 
 // ================= EMAIL TEMPLATE =================
+
 const emailTemplate = (title, content) => {
   return `
   <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
@@ -34,8 +45,6 @@ const emailTemplate = (title, content) => {
   </div>
   `;
 };
-
-
 
 // =================================================
 // ================= SIGNUP ========================
@@ -77,13 +86,17 @@ exports.signUp = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const otpData = generateOtp();
 
+    // ✅ IMAGE PATH (if uploaded)
+    const imagePath = req.file ? req.file.path : null;
+
     await User.create({
       fullname,
-      email: email.trim().toLowerCase(), 
+      email: email.trim().toLowerCase(),
       phone,
       location,
       passcode,
       password: hashedPassword,
+      image: imagePath, // 🔥 IMAGE SAVE
       otp: otpData.otp,
       otpExpiry: otpData.expiry,
       isVerified: false,
@@ -97,8 +110,8 @@ exports.signUp = async (req, res) => {
         `<p>Hey <b>${fullname}</b>,</p>
          <p>Your OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
-      )
+         <p>Valid for 90 sec ⏳</p>`,
+      ),
     );
 
     res.status(201).json({
@@ -109,8 +122,6 @@ exports.signUp = async (req, res) => {
   }
 };
 
-
-
 // =================================================
 // ================= OTP VERIFY ====================
 // =================================================
@@ -118,20 +129,53 @@ exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({  email: email.trim().toLowerCase() });
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
 
-    if (user.otp !== Number(otp) || user.otpExpiry < Date.now()) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
+    // 3️⃣ Check if already verified
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
     }
 
+    // 4️⃣ Check OTP exists
+    if (!user.otp || !user.otpExpiry) {
+      return res.status(400).json({
+        message: "OTP not found. Please request a new one.",
+      });
+    }
+
+    // 5️⃣ Check expiry first
+    if (user.otpExpiry < Date.now()) {
+      return res.status(400).json({
+        message: "OTP expired",
+      });
+    }
+
+    // 6️⃣ Check OTP match
+    if (user.otp !== Number(otp)) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    // 7️⃣ Update user
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
+
     await user.save();
+
+    // ✅ GENERATE TOKEN HERE
+    const token = generateToken(user);
 
     await sendMail(
       user.email,
@@ -140,17 +184,28 @@ exports.otpVerify = async (req, res) => {
         "You're Officially In 🚀",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your account has been successfully verified.</p>
-         <p>Welcome to KikStart 💙</p>`
-      )
+         <p>Welcome to KikStart 💙</p>`,
+      ),
     );
 
-    res.status(200).json({ message: "Account verified successfully" });
+    // ✅ SEND TOKEN IN RESPONSE
+    res.status(200).json({
+      message: "Account verified successfully",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role,
+        image: user.image, // 🔥 ADD THIS
+      },
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({
+      message: error.message,
+    });
   }
 };
-
-
 
 // =================================================
 // ================= RESEND OTP ====================
@@ -191,22 +246,19 @@ exports.resendOtp = async (req, res) => {
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your new OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
-      )
+         <p>Valid for 90 sec ⏳</p>`,
+      ),
     );
 
     res.status(200).json({
       message: "New OTP sent successfully",
     });
-
   } catch (error) {
     res.status(500).json({
       message: error.message,
     });
   }
 };
-
-
 
 // =================================================
 // ================= LOGIN =========================
@@ -229,16 +281,19 @@ exports.login = async (req, res) => {
     // If phone is provided
     else if (phone) {
       user = await User.findOne({ phone: String(phone).trim() });
-    }
-
-    else {
+    } else {
       return res.status(400).json({
         message: "Email or phone is required",
       });
     }
 
-    if (!user)
-      return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
+    }
 
     const checkPassword = await bcrypt.compare(password, user.password);
 
@@ -261,8 +316,8 @@ exports.login = async (req, res) => {
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your Login OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
-      )
+         <p>Valid for 30 sec ⏳</p>`,
+      ),
     );
 
     res.status(200).json({
@@ -270,13 +325,10 @@ exports.login = async (req, res) => {
       requiresOtp: true,
       email: user.email,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= LOGOUT ========================
@@ -290,7 +342,7 @@ exports.logout = async (req, res) => {
     }
 
     const user = await User.findOne({
-      email: email.trim().toLowerCase()
+      email: email.trim().toLowerCase(),
     });
 
     if (!user) {
@@ -311,18 +363,15 @@ exports.logout = async (req, res) => {
         "See You Again Soon 👋",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>You’ve successfully logged out.</p>
-         <p>Come back soon — something exciting is waiting 🚀</p>`
-      )
+         <p>Come back soon — something exciting is waiting 🚀</p>`,
+      ),
     );
 
     res.status(200).json({ message: "Logged out successfully!" });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= FORGOT PASSWORD ===============
@@ -348,8 +397,8 @@ exports.forgotPassword = async (req, res) => {
         "Password Reset OTP",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <h1>${otpData.otp}</h1>
-         <p>Valid for 30 seconds ⏳</p>`
-      )
+         <p>Valid for 90 seconds ⏳</p>`,
+      ),
     );
 
     res.status(200).json({ message: "OTP sent to email" });
@@ -357,8 +406,6 @@ exports.forgotPassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 // =================================================
 // ================= RESET PASSWORD ================
@@ -374,7 +421,8 @@ exports.resetPassword = async (req, res) => {
     }
     if (password !== confirmpass) {
       return res.status(400).json({
-        message: "You should give your confirm pass as similar to your password !",
+        message:
+          "You should give your confirm pass as similar to your password !",
       });
     }
 
@@ -410,8 +458,8 @@ exports.resetPassword = async (req, res) => {
       emailTemplate(
         "You're All Set 🔐",
         `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>Your password has been successfully updated.</p>`
-      )
+         <p>Your password has been successfully updated.</p>`,
+      ),
     );
 
     res.status(200).json({
@@ -424,3 +472,92 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// =================================================
+// ============== GOOGLE SIGNUP / LOGIN ===========
+// =================================================
+exports.googleAuth = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        message: "Google code is required",
+      });
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const userRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      }
+    );
+
+    // 🔥 GOOGLE IMAGE ADD
+    const { email, name, picture } = userRes.data;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Google email not found",
+      });
+    }
+
+    let user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!user) {
+      user = await User.create({
+        fullname: name,
+        email: email.trim().toLowerCase(),
+        password: "google-auth",
+        isVerified: true,
+        image: picture || null, // ✅ IMAGE SAVE
+      });
+    } else {
+      // ✅ If user exists but image not set, update from Google
+      if (!user.image) {
+        user.image = picture || null;
+        await user.save();
+      }
+    }
+
+    const token = generateToken(user);
+
+    // ⭐ MAIL SEND SAFE CHECK
+    if (user.email) {
+      await sendMail(
+        user.email,
+        "🎉 Welcome to KikStart!",
+        emailTemplate(
+          "You're Officially In 🚀",
+          `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`
+        )
+      );
+    }
+
+    return res.status(200).json({
+      message: "Google authentication successful",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role,
+        image: user.image || null, // ✅ RETURN IMAGE
+      },
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
+  }
+};
