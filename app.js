@@ -9,7 +9,10 @@ const enqRouter = require("./routes/EnquiryForm/enquiryRoute");
 const contactRouter = require("./routes/ContactForm/contactRoute");
 const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute");
 const HomeBannerRouter = require("./routes/HomeBanner/HomeBannerRoute");
-const WhyChooseUsCardRouter = require("./routes/WhyChooseUs/WhyChooseUsRoute");
+
+const WhyChooseUsAdminRouter = require("./routes/WhyChooseUs/WhyChooseUsAdminRoute");
+const WhyChooseUsUserRouter = require("./routes/WhyChooseUs/WhyChooseUsUserRoute");
+
 const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
 const serviceRouter = require("./routes/Service/ServiceRoute");
@@ -48,7 +51,8 @@ app.use("/api/v1/admin", adminAuthRouter);
 
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
-app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter);
+app.use("/api/v1/admin/why-choose-us", WhyChooseUsAdminRouter);
+app.use("/api/v1/user/why-choose-us", WhyChooseUsUserRouter);
 
 app.use("/api/v1/admin/testimonal", testimonialAdminRouter);
 app.use("/api/v1/user/testimonal", testimonialUserRouter);
