@@ -13,7 +13,8 @@ const WhyChooseUsCardRouter = require("./routes/WhyChooseUs/WhyChooseUsRoute");
 const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
 const serviceRouter = require("./routes/Service/ServiceRoute");
-const faqRoutes = require("./routes/FAQs/FAQsRoute");
+const faqRoutesAdmin = require("./routes/FAQs/FAQsAdminRoute");
+const faqRoutesUser = require("./routes/FAQs/FAQsUserRoute");
 
 const adminAuthRouter = require("./routes/adminAuthRoutes");
 
@@ -53,7 +54,8 @@ app.use("/api/v1/media", mediaRoutes);
 app.use("/api/v1/about-us", AboutUsRoute );
 app.use("/api/v1/service", serviceRouter);
 
-app.use("/api/v1/faq", faqRoutes);
+app.use("/api/v1/admin/faq", faqRoutesAdmin);
+app.use("/api/v1/user/faq", faqRoutesUser);
 
 app.use("/api/v1", AllHeadingRouter);
 
