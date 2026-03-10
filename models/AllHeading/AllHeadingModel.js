@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const headingSchema = new mongoose.Schema(
   {
-    subheading: {
+    tagline: {
       type: String,
     },
     

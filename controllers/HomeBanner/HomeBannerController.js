@@ -80,7 +80,7 @@ exports.getAllHomeBanner = async (req, res) => {
           isActive: 1,
           createdAt: 1,
           "headingData._id": 1,
-          "headingData.subheading": 1,
+          "headingData.tagline": 1,
           "headingData.heading": 1,
           "headingData.description": 1
         }
@@ -145,7 +145,7 @@ exports.getHomeBannerById = async (req, res) => {
           isActive: 1,
           createdAt: 1,
           "headingData._id": 1,
-          "headingData.subheading": 1,
+          "headingData.tagline": 1,
           "headingData.heading": 1,
           "headingData.description": 1
         }
