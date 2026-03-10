@@ -10,6 +10,9 @@ router.post("/create", controller.createHomeBanner);
 router.get("/", controller.getAllHomeBanner);
 
 
+//active toggle
+router.put("/active/:id", controller.toggleActiveBanner);
+
 // Get By ID
 router.get("/:id", controller.getHomeBannerById);
 
