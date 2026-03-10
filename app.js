@@ -7,13 +7,17 @@ const authMiddleware = require("./middleware/authMiddleware");
 const AuthRouter = require("./routes/authRoutes");
 const enqRouter = require("./routes/EnquiryForm/enquiryRoute");
 const contactRouter = require("./routes/ContactForm/contactRoute");
+
 const AllHeadingRouter = require("./routes/AllHeading/AllHeadingRoute");
-const HomeBannerRouter = require("./routes/HomeBanner/HomeBannerRoute");
+
+const HomeBannerAdminRouter = require("./routes/HomeBanner/HomeBannerAdminRoute");
+const HomeBannerUserRouter = require("./routes/HomeBanner/HomeBannerUserRoute");
 
 const WhyChooseUsAdminRouter = require("./routes/WhyChooseUs/WhyChooseUsAdminRoute");
 const WhyChooseUsUserRouter = require("./routes/WhyChooseUs/WhyChooseUsUserRoute");
 
 const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
+
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
 const serviceRouter = require("./routes/Service/ServiceRoute");
 
@@ -49,7 +53,8 @@ app.use(
 
 app.use("/api/v1/admin", adminAuthRouter);
 
-app.use("/api/v1/home-banner", HomeBannerRouter);
+app.use("/api/v1/admin/home-banner", HomeBannerAdminRouter);
+app.use("/api/v1/user/home-banner", HomeBannerUserRouter);
 
 app.use("/api/v1/admin/why-choose-us", WhyChooseUsAdminRouter);
 app.use("/api/v1/user/why-choose-us", WhyChooseUsUserRouter);
