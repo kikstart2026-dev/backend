@@ -69,7 +69,7 @@ exports.getAllHomeBanner = async (req, res) => {
       // ✅ ACTIVE FIRST + NEWEST
       {
         $sort: {
-          isActive: -1,
+          // isActive: -1,
           createdAt: -1,
         },
       },
@@ -77,12 +77,13 @@ exports.getAllHomeBanner = async (req, res) => {
       {
         $project: {
           image: 1,
-          isActive: 1,   // ✅ send active status
+          isActive: 1,
+          createdAt: 1,
           "headingData._id": 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
-          "headingData.description": 1,
-        },
+          "headingData.description": 1
+        }
       },
 
     ]);
@@ -141,12 +142,13 @@ exports.getHomeBannerById = async (req, res) => {
       {
         $project: {
           image: 1,
-          isActive: 1,  // ✅
+          isActive: 1,
+          createdAt: 1,
           "headingData._id": 1,
           "headingData.subheading": 1,
           "headingData.heading": 1,
-          "headingData.description": 1,
-        },
+          "headingData.description": 1
+        }
       },
 
     ]);
