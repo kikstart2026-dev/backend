@@ -14,6 +14,9 @@ const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
 const serviceRouter = require("./routes/Service/ServiceRoute");
 
+const testimonialAdminRouter = require("./routes/Testimonial/testimonialAdminRoute");
+const testimonialUserRouter = require("./routes/Testimonial/testimonialUserRoute");
+
 const adminAuthRouter = require("./routes/adminAuthRoutes");
 
 
@@ -46,6 +49,9 @@ app.use("/api/v1/admin", adminAuthRouter);
 app.use("/api/v1/home-banner", HomeBannerRouter);
 
 app.use("/api/v1/why-choose-us", WhyChooseUsCardRouter);
+
+app.use("/api/v1/admin/testimonal", testimonialAdminRouter);
+app.use("/api/v1/user/testimonal", testimonialUserRouter);
 
 app.use("/api/v1/media", mediaRoutes);
 
