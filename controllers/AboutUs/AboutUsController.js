@@ -54,7 +54,7 @@ exports.getAllAbout = async (req, res) => {
           image: 1,
           headingData: {
             _id: "$headingData._id",
-            subheading: "$headingData.subheading",
+            tagline: "$headingData.tagline",
             heading: "$headingData.heading",
             description: "$headingData.description",
           },
@@ -115,7 +115,7 @@ exports.getAboutById = async (req, res) => {
       {
         $project: {
           image: 1,
-          "headingData.subheading": 1,
+          "headingData.tagline": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
         },
