@@ -18,7 +18,9 @@ const WhyChooseUsUserRouter = require("./routes/WhyChooseUs/WhyChooseUsUserRoute
 
 const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 
-const AboutUsRoute = require("./routes/AboutUs/AboutUsRoute")
+const AboutUsAdminRoute = require("./routes/AboutUs/AboutUsAdminRoute");
+const AboutUsUserRoute = require("./routes/AboutUs/AboutUsUserRoute");
+
 const serviceRouter = require("./routes/Service/ServiceRoute");
 
 const faqAdminRouter = require("./routes/FAQs/FAQsAdminRoute");
@@ -67,7 +69,10 @@ app.use("/api/v1/user/testimonal", testimonialUserRouter);
 
 app.use("/api/v1/media", mediaRoutes);
 
-app.use("/api/v1/about-us", AboutUsRoute );
+app.use("/api/v1/admin/about-us", AboutUsAdminRoute );
+app.use("/api/v1/user/about-us", AboutUsUserRoute );
+
+
 app.use("/api/v1/service", serviceRouter);
 
 app.use("/api/v1/admin/faq", faqAdminRouter);
