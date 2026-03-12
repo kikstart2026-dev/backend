@@ -58,7 +58,12 @@ exports.getAll = async (req, res) => {
           as: "headingData",
         },
       },
-      { $unwind: "$headingData" },
+      {
+        $unwind: {
+          path: "$headingData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           image: 1,
