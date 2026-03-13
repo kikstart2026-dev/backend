@@ -21,7 +21,8 @@ const mediaRoutes = require("./routes/AllMedia/AllMediaRoutes");
 const AboutUsAdminRoute = require("./routes/AboutUs/AboutUsAdminRoute");
 const AboutUsUserRoute = require("./routes/AboutUs/AboutUsUserRoute");
 
-const serviceRouter = require("./routes/Service/ServiceRoute");
+const serviceAdminRouter = require("./routes/Service/ServiceAdminRoute");
+const serviceUserRouter = require("./routes/Service/ServiceUserRoute");
 
 const faqAdminRouter = require("./routes/FAQs/FAQsAdminRoute");
 const faqUserRouter = require("./routes/FAQs/FAQsUserRoute");
@@ -73,7 +74,9 @@ app.use("/api/v1/admin/about-us", AboutUsAdminRoute );
 app.use("/api/v1/user/about-us", AboutUsUserRoute );
 
 
-app.use("/api/v1/service", serviceRouter);
+app.use("/api/v1/admin/service", serviceAdminRouter);
+app.use("/api/v1/user/service", serviceUserRouter);
+
 
 app.use("/api/v1/admin/faq", faqAdminRouter);
 app.use("/api/v1/user/faq", faqUserRouter);
