@@ -8,6 +8,9 @@ router.post("/create", controller.createAbout);
 // Get All
 router.get("/", controller.getAllAbout);
 
+// active toggle
+router.put("/active/:id", controller.toggleActiveAbout);
+
 // Get By Id
 router.get("/:id", controller.getAboutById);
 

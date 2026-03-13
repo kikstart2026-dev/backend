@@ -17,6 +17,7 @@ exports.createAbout = async (req, res) => {
     const newData = await AboutUsModel.create({
       headingId,
       image,
+      isActive: false,
     });
 
     res.status(201).json({
@@ -34,8 +35,7 @@ exports.createAbout = async (req, res) => {
 };
 
 
-
-// GET ALL (Aggregation with Heading)
+// GET ALL
 exports.getAllAbout = async (req, res) => {
   try {
 
@@ -48,10 +48,21 @@ exports.getAllAbout = async (req, res) => {
           as: "headingData",
         },
       },
+
       { $unwind: "$headingData" },
+
+      {
+        $sort: {
+          createdAt: 1,
+          _id: 1
+        },
+      },
+
       {
         $project: {
           image: 1,
+          isActive: 1,
+          createdAt: 1,
           headingData: {
             _id: "$headingData._id",
             tagline: "$headingData.tagline",
@@ -77,8 +88,6 @@ exports.getAllAbout = async (req, res) => {
   }
 };
 
-
-
 // GET BY ID
 exports.getAboutById = async (req, res) => {
   try {
@@ -98,6 +107,7 @@ exports.getAboutById = async (req, res) => {
           _id: new mongoose.Types.ObjectId(mongoId),
         },
       },
+
       {
         $lookup: {
           from: "headings",
@@ -106,15 +116,18 @@ exports.getAboutById = async (req, res) => {
           as: "headingData",
         },
       },
+
       {
         $unwind: {
           path: "$headingData",
           preserveNullAndEmptyArrays: true,
         },
       },
+
       {
         $project: {
           image: 1,
+          isActive: 1,
           "headingData.tagline": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
@@ -142,7 +155,6 @@ exports.getAboutById = async (req, res) => {
     });
   }
 };
-
 
 
 // UPDATE
@@ -186,6 +198,51 @@ exports.updateAbout = async (req, res) => {
 };
 
 
+// TOGGLE ACTIVE
+exports.toggleActiveAbout = async (req, res) => {
+  try {
+
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid ID format",
+      });
+    }
+
+    await AboutUsModel.updateMany(
+      { _id: { $ne: id } },
+      { $set: { isActive: false } }
+    );
+
+    const about = await AboutUsModel.findByIdAndUpdate(
+      id,
+      { $set: { isActive: true } },
+      { new: true }
+    );
+
+    if (!about) {
+      return res.status(404).json({
+        status: "error",
+        message: "About section not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "About section activated successfully",
+      data: about,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: err.message,
+    });
+  }
+};
+
 
 // DELETE SINGLE
 exports.singleDeleteAbout = async (req, res) => {
@@ -221,7 +278,6 @@ exports.singleDeleteAbout = async (req, res) => {
 };
 
 
-
 // SELECTIVE DELETE
 exports.selectiveDeleteAbout = async (req, res) => {
   try {
@@ -254,7 +310,6 @@ exports.selectiveDeleteAbout = async (req, res) => {
 };
 
 
-
 // DELETE ALL
 exports.multipleDeleteAbout = async (req, res) => {
   try {
@@ -266,7 +321,7 @@ exports.multipleDeleteAbout = async (req, res) => {
       message: "All About sections deleted",
       deletedCount: result.deletedCount,
     });
-    
+
   } catch (err) {
     res.status(500).json({
       status: "error",
