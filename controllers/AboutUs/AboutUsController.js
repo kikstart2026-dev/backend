@@ -53,8 +53,8 @@ exports.getAllAbout = async (req, res) => {
 
       {
         $sort: {
-          createdAt: 1,
-          _id: 1
+          isActive: -1,
+          createdAt: 1
         },
       },
 
@@ -62,7 +62,6 @@ exports.getAllAbout = async (req, res) => {
         $project: {
           image: 1,
           isActive: 1,
-          createdAt: 1,
           headingData: {
             _id: "$headingData._id",
             tagline: "$headingData.tagline",
@@ -211,14 +210,13 @@ exports.toggleActiveAbout = async (req, res) => {
       });
     }
 
-    await AboutUsModel.updateMany(
-      { _id: { $ne: id } },
-      { $set: { isActive: false } }
-    );
+    // deactivate all
+    await AboutUsModel.updateMany({}, { isActive: false });
 
+    // activate selected
     const about = await AboutUsModel.findByIdAndUpdate(
       id,
-      { $set: { isActive: true } },
+      { isActive: true },
       { new: true }
     );
 
