@@ -5,6 +5,14 @@ const AboutUsModel = require("../../models/AboutUs/AboutUsModel");
 // CREATE
 exports.createAbout = async (req, res) => {
   try {
+
+    if (!req.body) {
+      return res.status(400).json({
+        status: "error",
+        message: "Request body is missing",
+      });
+    }
+
     const { headingId, image } = req.body;
 
     if (!headingId || !image) {
@@ -53,8 +61,8 @@ exports.getAllAbout = async (req, res) => {
 
       {
         $sort: {
-          isActive: -1,
-          createdAt: 1
+          // isActive: -1,
+          createdAt: -1
         },
       },
 
@@ -62,21 +70,19 @@ exports.getAllAbout = async (req, res) => {
         $project: {
           image: 1,
           isActive: 1,
-          headingData: {
-            _id: "$headingData._id",
-            tagline: "$headingData.tagline",
-            heading: "$headingData.heading",
-            description: "$headingData.description",
+          createdAt: 1,
+          "headingData._id" : 1,
+          "headingData.tagline" : 1,
+          "headingData.heading" : 1,
+          "headingData.description" : 1,
           },
         },
-      },
     ]);
 
     res.status(200).json({
       status: "success",
-      message: "About section fetched successfully",
+      results: data.length,
       data,
-      count: data.length,
     });
 
   } catch (err) {
@@ -117,16 +123,14 @@ exports.getAboutById = async (req, res) => {
       },
 
       {
-        $unwind: {
-          path: "$headingData",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+        $unwind: "$headingData"},
 
       {
         $project: {
           image: 1,
           isActive: 1,
+          createdAt: 1,
+          "headingData._id": 1,
           "headingData.tagline": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
@@ -143,7 +147,6 @@ exports.getAboutById = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "About section fetched successfully",
       data: data[0],
     });
 
@@ -246,20 +249,31 @@ exports.toggleActiveAbout = async (req, res) => {
 exports.singleDeleteAbout = async (req, res) => {
   try {
 
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        status: "error",
-        message: "Invalid ID format",
-      });
-    }
+    const deleted = await AboutUsModel.findByIdAndDelete(req.params.id);
 
-    const data = await AboutUsModel.findByIdAndDelete(req.params.id);
-
-    if (!data) {
+    if (!deleted) {
       return res.status(404).json({
         status: "error",
         message: "About section not found",
       });
+    }
+
+    // check if any active item exists
+    const activeExists = await AboutUsModel.findOne({ isActive: true });
+
+    // if no active found, activate latest created
+    if (!activeExists) {
+
+      const latestAbout = await AboutUsModel
+        .findOne()
+        .sort({ createdAt: -1 });
+
+      if (latestAbout) {
+        await AboutUsModel.findByIdAndUpdate(latestAbout._id, {
+          isActive: true,
+        });
+      }
+
     }
 
     res.status(200).json({
@@ -268,10 +282,12 @@ exports.singleDeleteAbout = async (req, res) => {
     });
 
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
 
@@ -293,6 +309,24 @@ exports.selectiveDeleteAbout = async (req, res) => {
       _id: { $in: ids },
     });
 
+    // check if any active item exists
+    const activeExists = await AboutUsModel.findOne({ isActive: true });
+
+    // if no active found → activate latest created
+    if (!activeExists) {
+
+      const latestAbout = await AboutUsModel
+        .findOne()
+        .sort({ createdAt: -1 });
+
+      if (latestAbout) {
+        await AboutUsModel.findByIdAndUpdate(latestAbout._id, {
+          isActive: true,
+        });
+      }
+
+    }
+
     res.status(200).json({
       status: "success",
       message: "Selected sections deleted",
@@ -300,10 +334,12 @@ exports.selectiveDeleteAbout = async (req, res) => {
     });
 
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
 
