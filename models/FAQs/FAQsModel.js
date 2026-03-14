@@ -5,7 +5,7 @@ const faqSchema = new mongoose.Schema(
     headingId: {
      type: mongoose.Schema.Types.ObjectId, // it is to fetch the exact form of unique mongo id
      ref: "Heading",
-     required: true,
+    //  required: false,
     },
     question: {
       type: String,

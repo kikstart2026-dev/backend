@@ -36,22 +36,25 @@ exports.getFaqs = async (req, res) => {
           as: "headingData"
         }
       },
-      { $unwind: "$headingData" },
+      {  $unwind: {
+          path: "$headingData",
+          preserveNullAndEmptyArrays: true
+        } },
 
       // {
       //   $sort: { createdAt: -1 }
       // },
 
       {
-        $project:{
-            question:1,
-            answer:1,
-            headingData:{
-                _id: "$headingData._id",
-                tagline: "$headingData.tagline",
-                heading: "$headingData.heading",
-               description: "$headingData.description",
-            }
+        $project: {
+          question: 1,
+          answer: 1,
+          headingData: {
+            _id: "$headingData._id",
+            tagline: "$headingData.tagline",
+            heading: "$headingData.heading",
+            description: "$headingData.description",
+          }
         }
       }
     ]);
@@ -90,7 +93,13 @@ exports.getSingleFaq = async (req, res) => {
           as: "headingData"
         }
       },
-      { $unwind: "$headingData" }
+
+      {
+        $unwind: {
+          path: "$headingData",
+          preserveNullAndEmptyArrays: true
+        }
+      },
     ]);
 
     if (!faq.length) {
