@@ -73,7 +73,7 @@ exports.getAllCards = async (req, res) => {
           color: 1,
           headingData: {
             _id: "$headingData._id",
-            subheading: "$headingData.subheading",
+            tagline: "$headingData.tagline",
             heading: "$headingData.heading",
             description: "$headingData.description",
           },
@@ -149,7 +149,7 @@ exports.getCardById = async (req, res) => {
           title: 1,
           description: 1,
           color: 1,
-          "headingData.subheading": 1,
+          "headingData.tagline": 1,
           "headingData.heading": 1,
           "headingData.description": 1,
         },

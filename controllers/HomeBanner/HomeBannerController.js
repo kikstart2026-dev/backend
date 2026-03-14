@@ -7,6 +7,7 @@ const HomeBannerModel = require("../../models/HomeBanner/HomeBannerModel");
 // ==========================
 exports.createHomeBanner = async (req, res) => {
   try {
+
     if (!req.body) {
       return res.status(400).json({
         status: "error",
@@ -26,6 +27,7 @@ exports.createHomeBanner = async (req, res) => {
     const newBanner = await HomeBannerModel.create({
       headingId,
       image,
+      isActive: false   // ✅ active field
     });
 
     res.status(201).json({
@@ -35,10 +37,12 @@ exports.createHomeBanner = async (req, res) => {
     });
 
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
 
@@ -48,7 +52,9 @@ exports.createHomeBanner = async (req, res) => {
 // ==========================
 exports.getAllHomeBanner = async (req, res) => {
   try {
+
     const data = await HomeBannerModel.aggregate([
+
       {
         $lookup: {
           from: "headings",
@@ -57,22 +63,29 @@ exports.getAllHomeBanner = async (req, res) => {
           as: "headingData",
         },
       },
+
       { $unwind: "$headingData" },
 
-      // ✅ NEWEST FIRST
+      // ✅ ACTIVE FIRST + NEWEST
       {
-        $sort: { createdAt: -1 },
+        $sort: {
+          // isActive: -1,
+          createdAt: -1,
+        },
       },
 
       {
         $project: {
           image: 1,
+          isActive: 1,
+          createdAt: 1,
           "headingData._id": 1,
-          "headingData.subheading": 1,
+          "headingData.tagline": 1,
           "headingData.heading": 1,
-          "headingData.description": 1,
-        },
+          "headingData.description": 1
+        }
       },
+
     ]);
 
     res.status(200).json({
@@ -80,20 +93,26 @@ exports.getAllHomeBanner = async (req, res) => {
       results: data.length,
       data,
     });
+
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
+
 
 // ==========================
 // ✅ GET BY ID
 // ==========================
 exports.getHomeBannerById = async (req, res) => {
   try {
+
     const mongoId = req.params.id;
+
     if (!mongoose.Types.ObjectId.isValid(mongoId)) {
       return res.status(400).json({
         status: "error",
@@ -102,11 +121,13 @@ exports.getHomeBannerById = async (req, res) => {
     }
 
     const data = await HomeBannerModel.aggregate([
+
       {
-        $match: { // it compares 2 mongo ids
+        $match: {
           _id: new mongoose.Types.ObjectId(mongoId),
         },
       },
+
       {
         $lookup: {
           from: "headings",
@@ -115,16 +136,21 @@ exports.getHomeBannerById = async (req, res) => {
           as: "headingData",
         },
       },
+
       { $unwind: "$headingData" },
+
       {
         $project: {
-          image: 1, // if we use 0 then exclude this field it will return all fields
-           "headingData._id": 1,
-          "headingData.subheading": 1,
+          image: 1,
+          isActive: 1,
+          createdAt: 1,
+          "headingData._id": 1,
+          "headingData.tagline": 1,
           "headingData.heading": 1,
-          "headingData.description": 1,
-        },
+          "headingData.description": 1
+        }
       },
+
     ]);
 
     if (!data.length) {
@@ -138,11 +164,14 @@ exports.getHomeBannerById = async (req, res) => {
       status: "success",
       data: data[0],
     });
+
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
 
@@ -152,6 +181,7 @@ exports.getHomeBannerById = async (req, res) => {
 // ==========================
 exports.updateHomeBanner = async (req, res) => {
   try {
+
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         status: "error",
@@ -164,7 +194,7 @@ exports.updateHomeBanner = async (req, res) => {
     const updatedData = await HomeBannerModel.findByIdAndUpdate(
       req.params.id,
       { headingId, image },
-      { new: true}
+      { new: true }
     );
 
     if (!updatedData) {
@@ -179,11 +209,63 @@ exports.updateHomeBanner = async (req, res) => {
       message: "Home Banner updated successfully",
       data: updatedData,
     });
+
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
+  }
+};
+
+
+// ==========================
+// ✅ TOGGLE ACTIVE
+// ==========================
+exports.toggleActiveBanner = async (req, res) => {
+  try {
+
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "error",
+        message: "Invalid ID format",
+      });
+    }
+
+    // deactivate all banners
+    await HomeBannerModel.updateMany({}, { isActive: false });
+
+    // activate selected banner
+    const banner = await HomeBannerModel.findByIdAndUpdate(
+      id,
+      { isActive: true },
+      { new: true }
+    );
+
+    if (!banner) {
+      return res.status(404).json({
+        status: "error",
+        message: "Banner not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Banner activated successfully",
+      data: banner,
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      status: "error",
+      message: err.message,
+    });
+
   }
 };
 
@@ -193,6 +275,7 @@ exports.updateHomeBanner = async (req, res) => {
 // ==========================
 exports.singleDeleteHomeBanner = async (req, res) => {
   try {
+
     const data = await HomeBannerModel.findByIdAndDelete(req.params.id);
 
     if (!data) {
@@ -206,11 +289,14 @@ exports.singleDeleteHomeBanner = async (req, res) => {
       status: "success",
       message: "Home Banner deleted successfully",
     });
+
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
 
@@ -220,6 +306,7 @@ exports.singleDeleteHomeBanner = async (req, res) => {
 // ==========================
 exports.selectiveDeleteHomeBanner = async (req, res) => {
   try {
+
     const { ids } = req.body;
 
     if (!ids || !Array.isArray(ids)) {
@@ -238,11 +325,14 @@ exports.selectiveDeleteHomeBanner = async (req, res) => {
       message: "Selected HomeBanners deleted",
       deletedCount: result.deletedCount,
     });
+
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };
 
@@ -252,6 +342,7 @@ exports.selectiveDeleteHomeBanner = async (req, res) => {
 // ==========================
 exports.multipleDeleteHomeBanner = async (req, res) => {
   try {
+
     const result = await HomeBannerModel.deleteMany({});
 
     res.status(200).json({
@@ -259,10 +350,13 @@ exports.multipleDeleteHomeBanner = async (req, res) => {
       message: "All Home Banners deleted",
       deletedCount: result.deletedCount,
     });
+
   } catch (err) {
+
     res.status(500).json({
       status: "error",
       message: err.message,
     });
+
   }
 };

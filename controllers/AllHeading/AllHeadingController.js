@@ -2,10 +2,10 @@ const HeadingModel = require("../../models/AllHeading/AllHeadingModel");
 
 exports.createHead = async (req, res) => {
     try {
-        const { subheading, heading, description } = req.body;
+        const { tagline, heading, description } = req.body;
 
         const newhead = await HeadingModel.create({
-            subheading,
+            tagline,
             heading,
             description
         });
@@ -15,7 +15,7 @@ exports.createHead = async (req, res) => {
             message: "New heading created",
             data: {
                 _id: newhead._id,
-                subheading: newhead.subheading,
+                tagline: newhead.tagline,
                 heading: newhead.heading,
                 description: newhead.description,
             }
@@ -70,10 +70,10 @@ exports.getById = async (req, res) => {
 // Update Heading
 exports.update = async (req, res) => {
     try {
-        const { subheading, heading, description } = req.body;
+        const { tagline, heading, description } = req.body;
 
         const updatedData = await HeadingModel.findByIdAndUpdate( req.params.id,
-            { subheading, heading, description },
+            { tagline, heading, description },
             { new: true }
         );
 
