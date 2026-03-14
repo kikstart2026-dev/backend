@@ -38,9 +38,9 @@ exports.getFaqs = async (req, res) => {
       },
       { $unwind: "$headingData" },
 
-      {
-        $sort: { createdAt: -1 }
-      },
+      // {
+      //   $sort: { createdAt: -1 }
+      // },
 
       {
         $project:{
@@ -48,7 +48,7 @@ exports.getFaqs = async (req, res) => {
             answer:1,
             headingData:{
                 _id: "$headingData._id",
-                subheading: "$headingData.subheading",
+                tagline: "$headingData.tagline",
                 heading: "$headingData.heading",
                description: "$headingData.description",
             }
