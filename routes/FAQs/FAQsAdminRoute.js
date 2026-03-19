@@ -15,7 +15,16 @@ router.get("/:id", controller.getSingleFaq);
 // Update
 router.put("/:id", controller.updateFaq);
 
-// Delete
+// ✅ TOGGLE ACTIVE
+router.patch("/toggle/:id", controller.toggleActiveFaq);
+
+// Delete Single
 router.delete("/:id", controller.deleteFaq);
+
+// ✅ SELECTIVE DELETE
+router.post("/delete-selected", controller.selectiveDeleteFaq);
+
+// ✅ DELETE ALL
+router.delete("/delete-all", controller.multipleDeleteFaq);
 
 module.exports = router;
