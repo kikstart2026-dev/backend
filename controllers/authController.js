@@ -61,6 +61,7 @@ exports.signUp = async (req, res) => {
       confirmPass,
     } = req.body;
 
+    // ✅ Validation
     if (
       !fullname ||
       !email ||
@@ -77,48 +78,104 @@ exports.signUp = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (existingUser) {
-      return res.status(409).json({ message: "Email or phone already exists" });
-    }
+    // 🔍 Find by email & phone separately
+    const existingEmailUser = await User.findOne({ email: normalizedEmail });
+    const existingPhoneUser = await User.findOne({ phone });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otpData = generateOtp();
-
-    // ✅ IMAGE PATH (if uploaded)
     const imagePath = req.file ? req.file.path : null;
 
+    // ❌ CASE: Phone already used by another user
+    if (
+      existingPhoneUser &&
+      (!existingEmailUser || existingPhoneUser._id.toString() !== existingEmailUser._id.toString())
+    ) {
+      return res.status(400).json({
+        message: "Phone number already used",
+      });
+    }
+
+    // ✅ CASE 1 & 2: Email exists
+    if (existingEmailUser) {
+      // ❌ যদি verified হয়
+      if (existingEmailUser.isVerified === true) {
+        return res.status(400).json({
+          message: "User already exists. Please login.",
+        });
+      }
+
+      // ✅ যদি NOT verified → UPDATE (phone change allowed)
+      existingEmailUser.fullname = fullname;
+      existingEmailUser.phone = phone;
+      existingEmailUser.location = location;
+      existingEmailUser.passcode = passcode;
+      existingEmailUser.password = hashedPassword;
+      existingEmailUser.image = imagePath;
+      existingEmailUser.otp = otpData.otp;
+      existingEmailUser.otpExpiry = otpData.expiry;
+
+      // ❌ email change korchi na (IMPORTANT 🔥)
+
+      await existingEmailUser.save();
+
+      await sendMail(
+        normalizedEmail,
+        "🔐 Verify Your KikStart Account",
+        emailTemplate(
+          "Account Verification",
+          `<p>Hey <b>${fullname}</b>,</p>
+           <p>Your OTP is:</p>
+           <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
+           <p>Valid for 90 sec ⏳</p>`
+        )
+      );
+
+      return res.status(200).json({
+        message: "Your Account Already Exists! Please verify your account first.",
+      });
+    }
+
+    // ✅ CASE 3: New user
     await User.create({
       fullname,
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       phone,
       location,
       passcode,
       password: hashedPassword,
-      image: imagePath, // 🔥 IMAGE SAVE
+      image: imagePath,
       otp: otpData.otp,
       otpExpiry: otpData.expiry,
       isVerified: false,
     });
 
     await sendMail(
-      email,
+      normalizedEmail,
       "🔐 Verify Your KikStart Account",
       emailTemplate(
         "Account Verification",
         `<p>Hey <b>${fullname}</b>,</p>
          <p>Your OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 90 sec ⏳</p>`,
-      ),
+         <p>Valid for 90 sec ⏳</p>`
+      )
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "Account created. OTP sent to email.",
     });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: "Duplicate field error",
+      });
+    }
+
+    return res.status(500).json({ message: error.message });
   }
 };
 
@@ -494,7 +551,7 @@ exports.googleAuth = async (req, res) => {
         headers: {
           Authorization: `Bearer ${tokens.access_token}`,
         },
-      }
+      },
     );
 
     // 🔥 GOOGLE IMAGE ADD
@@ -537,8 +594,8 @@ exports.googleAuth = async (req, res) => {
           "You're Officially In 🚀",
           `<p>Hey <b>${user.fullname}</b>,</p>
            <p>Your Google account login successful.</p>
-           <p>Welcome to KikStart 💙</p>`
-        )
+           <p>Welcome to KikStart 💙</p>`,
+        ),
       );
     }
 
@@ -553,7 +610,6 @@ exports.googleAuth = async (req, res) => {
         image: user.image || null, // ✅ RETURN IMAGE
       },
     });
-
   } catch (error) {
     return res.status(500).json({
       message: "Google authentication failed",
