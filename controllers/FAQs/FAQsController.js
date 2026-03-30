@@ -2,15 +2,27 @@ const mongoose = require("mongoose");
 const Faq = require("../../models/FAQs/FAQsModel");
 
 
-// CREATE FAQ
+// ==========================
+// ✅ CREATE FAQ (AUTO ACTIVE)
+// ==========================
 exports.createFaq = async (req, res) => {
   try {
 
-    const faq = await Faq.create(req.body);
+    if (!req.body) {
+      return res.status(400).json({
+        success: false,
+        message: "Request body is missing",
+      });
+    }
+
+    const faq = await Faq.create({
+      ...req.body,
+      isActive: true   // ✅ auto active
+    });
 
     res.status(201).json({
       success: true,
-      message: "FAQ created successfully",
+      message: "FAQ created & activated successfully",
       data: faq
     });
 
@@ -23,7 +35,9 @@ exports.createFaq = async (req, res) => {
 };
 
 
-// GET ALL FAQ
+// ==========================
+// ✅ GET ALL FAQ
+// ==========================
 exports.getFaqs = async (req, res) => {
   try {
 
@@ -36,19 +50,24 @@ exports.getFaqs = async (req, res) => {
           as: "headingData"
         }
       },
-      {  $unwind: {
+      {
+        $unwind: {
           path: "$headingData",
           preserveNullAndEmptyArrays: true
-        } },
-
-      // {
-      //   $sort: { createdAt: -1 }
-      // },
-
+        }
+      },
+      {
+        $sort: {
+          // isActive: -1,   // ✅ active first
+          createdAt: -1
+        }
+      },
       {
         $project: {
           question: 1,
           answer: 1,
+          isActive: 1,
+          createdAt: 1,
           headingData: {
             _id: "$headingData._id",
             tagline: "$headingData.tagline",
@@ -61,6 +80,7 @@ exports.getFaqs = async (req, res) => {
 
     res.status(200).json({
       success: true,
+      results: faqs.length,
       data: faqs
     });
 
@@ -73,11 +93,20 @@ exports.getFaqs = async (req, res) => {
 };
 
 
-// GET SINGLE FAQ
+// ==========================
+// ✅ GET SINGLE FAQ
+// ==========================
 exports.getSingleFaq = async (req, res) => {
   try {
 
     const mongoId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(mongoId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format",
+      });
+    }
 
     const faq = await Faq.aggregate([
       {
@@ -93,13 +122,26 @@ exports.getSingleFaq = async (req, res) => {
           as: "headingData"
         }
       },
-
       {
         $unwind: {
           path: "$headingData",
           preserveNullAndEmptyArrays: true
         }
       },
+      {
+        $project: {
+          question: 1,
+          answer: 1,
+          isActive: 1,
+          createdAt: 1,
+          headingData: {
+            _id: "$headingData._id",
+            tagline: "$headingData.tagline",
+            heading: "$headingData.heading",
+            description: "$headingData.description",
+          }
+        }
+      }
     ]);
 
     if (!faq.length) {
@@ -123,9 +165,18 @@ exports.getSingleFaq = async (req, res) => {
 };
 
 
-// UPDATE FAQ
+// ==========================
+// ✅ UPDATE FAQ
+// ==========================
 exports.updateFaq = async (req, res) => {
   try {
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format",
+      });
+    }
 
     const faq = await Faq.findByIdAndUpdate(
       req.params.id,
@@ -155,22 +206,148 @@ exports.updateFaq = async (req, res) => {
 };
 
 
-// DELETE FAQ
-exports.deleteFaq = async (req, res) => {
+// ==========================
+// ✅ TOGGLE ACTIVE (INDIVIDUAL)
+// ==========================
+exports.toggleActiveFaq = async (req, res) => {
   try {
 
-    const faq = await Faq.findByIdAndDelete(req.params.id);
+    const id = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid ID format",
+      });
+    }
+
+    const faq = await Faq.findById(id);
 
     if (!faq) {
       return res.status(404).json({
         success: false,
-        message: "FAQ not found"
+        message: "FAQ not found",
       });
+    }
+
+    faq.isActive = !faq.isActive; // ✅ only this one toggle
+    await faq.save();
+
+    res.status(200).json({
+      success: true,
+      message: "FAQ status updated",
+      data: faq,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+// ==========================
+// ✅ DELETE SINGLE FAQ
+// ==========================
+exports.deleteFaq = async (req, res) => {
+  try {
+
+    const deleted = await Faq.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "FAQ not found",
+      });
+    }
+
+    // check active exists
+    const activeExists = await Faq.findOne({ isActive: true });
+
+    if (!activeExists) {
+      const latest = await Faq.findOne().sort({ createdAt: -1 });
+
+      if (latest) {
+        await Faq.findByIdAndUpdate(latest._id, {
+          isActive: true,
+        });
+      }
     }
 
     res.status(200).json({
       success: true,
-      message: "FAQ deleted successfully"
+      message: "FAQ deleted successfully",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+// ==========================
+// ✅ SELECTIVE DELETE FAQ
+// ==========================
+exports.selectiveDeleteFaq = async (req, res) => {
+  try {
+
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({
+        success: false,
+        message: "Provide array of ids",
+      });
+    }
+
+    const result = await Faq.deleteMany({
+      _id: { $in: ids },
+    });
+
+    const activeExists = await Faq.findOne({ isActive: true });
+
+    if (!activeExists) {
+      const latest = await Faq.findOne().sort({ createdAt: -1 });
+
+      if (latest) {
+        await Faq.findByIdAndUpdate(latest._id, {
+          isActive: true,
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Selected FAQs deleted",
+      deletedCount: result.deletedCount,
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+
+// ==========================
+// ✅ DELETE ALL FAQ
+// ==========================
+exports.multipleDeleteFaq = async (req, res) => {
+  try {
+
+    const result = await Faq.deleteMany({});
+
+    res.status(200).json({
+      success: true,
+      message: "All FAQs deleted",
+      deletedCount: result.deletedCount,
     });
 
   } catch (error) {

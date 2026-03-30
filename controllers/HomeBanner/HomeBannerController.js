@@ -276,13 +276,31 @@ exports.toggleActiveBanner = async (req, res) => {
 exports.singleDeleteHomeBanner = async (req, res) => {
   try {
 
-    const data = await HomeBannerModel.findByIdAndDelete(req.params.id);
+    const deleted = await HomeBannerModel.findByIdAndDelete(req.params.id);
 
-    if (!data) {
+    if (!deleted) {
       return res.status(404).json({
         status: "error",
         message: "Home Banner not found",
       });
+    }
+
+    // check if any active banner exists
+    const activeExists = await HomeBannerModel.findOne({ isActive: true });
+
+    // if no active banner → activate latest created
+    if (!activeExists) {
+
+      const latestBanner = await HomeBannerModel
+        .findOne()
+        .sort({ createdAt: -1 });
+
+      if (latestBanner) {
+        await HomeBannerModel.findByIdAndUpdate(latestBanner._id, {
+          isActive: true,
+        });
+      }
+
     }
 
     res.status(200).json({
@@ -319,6 +337,24 @@ exports.selectiveDeleteHomeBanner = async (req, res) => {
     const result = await HomeBannerModel.deleteMany({
       _id: { $in: ids },
     });
+
+    // check if any active banner exists
+    const activeExists = await HomeBannerModel.findOne({ isActive: true });
+
+    // if no active banner found → activate latest created banner
+    if (!activeExists) {
+
+      const latestBanner = await HomeBannerModel
+        .findOne()
+        .sort({ createdAt: -1 });
+
+      if (latestBanner) {
+        await HomeBannerModel.findByIdAndUpdate(latestBanner._id, {
+          isActive: true,
+        });
+      }
+
+    }
 
     res.status(200).json({
       status: "success",
