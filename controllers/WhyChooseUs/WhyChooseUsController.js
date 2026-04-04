@@ -213,9 +213,18 @@ exports.updateCard = async (req, res) => {
 
     const { headingId, icon, title, description, color } = req.body;
 
+    // ✅ SAFE UPDATE OBJECT
+    const updateData = {};
+
+    if (headingId) updateData.headingId = headingId;
+    if (icon) updateData.icon = icon;
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (color) updateData.color = color;
+
     const updatedData = await WhyChooseUsCardModel.findByIdAndUpdate(
       req.params.id,
-      { headingId, icon, title, description, color },
+      updateData, // ✅ only valid fields
       { new: true }
     );
 
