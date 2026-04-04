@@ -30,6 +30,9 @@ const faqUserRouter = require("./routes/FAQs/FAQsUserRoute");
 const testimonialAdminRouter = require("./routes/Testimonial/testimonialAdminRoute");
 const testimonialUserRouter = require("./routes/Testimonial/testimonialUserRoute");
 
+const schoolAdminRouter = require("./routes/Schools/SchoolsAdminRoute");
+const schoolUserRouter = require("./routes/Schools/SchoolsUserRoute");
+
 const adminAuthRouter = require("./routes/adminAuthRoutes");
 
 
@@ -77,6 +80,8 @@ app.use("/api/v1/user/about-us", AboutUsUserRouter );
 app.use("/api/v1/admin/service", serviceAdminRouter);
 app.use("/api/v1/user/service", serviceUserRouter);
 
+app.use("/api/v1/admin/schools", schoolAdminRouter);
+app.use("/api/v1/user/schools", schoolUserRouter);
 
 app.use("/api/v1/admin/faq", faqAdminRouter);
 app.use("/api/v1/user/faq", faqUserRouter);
