@@ -54,6 +54,26 @@ exports.createCard = async (req, res) => {
 // GET ALL (Aggregate)
 exports.getAllCards = async (req, res) => {
   try {
+    // pagination params
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 4;
+    const skip = (page - 1) * limit;
+
+    // total count (without aggregation)
+    const totalData = await WhyChooseUsCardModel.aggregate([
+      {
+        $lookup: {
+          from: "headings",
+          localField: "headingId",
+          foreignField: "_id",
+          as: "headingData",
+        },
+      },
+      { $unwind: "$headingData" },
+      { $count: "total" },
+    ]);
+
+    const totalCards = totalData[0]?.total || 0;
 
     const data = await WhyChooseUsCardModel.aggregate([
       {
@@ -65,6 +85,14 @@ exports.getAllCards = async (req, res) => {
         },
       },
       { $unwind: "$headingData" },
+
+      // SORT (optional but recommended)
+      { $sort: { createdAt: 1 } },
+
+      // PAGINATION
+      { $skip: skip },
+      { $limit: limit },
+
       {
         $project: {
           icon: 1,
@@ -81,10 +109,10 @@ exports.getAllCards = async (req, res) => {
       },
     ]);
 
-    // Extract Heading
+    // Extract Heading (same as before)
     const heading = data.length ? data[0].headingData : null;
 
-    // Clean Cards Array
+    // Cards clean
     const cards = data.map((item) => ({
       _id: item._id,
       icon: item.icon,
@@ -96,11 +124,17 @@ exports.getAllCards = async (req, res) => {
     res.status(200).json({
       status: "success",
       message: "Why Choose Us fetched successfully",
+
+      // pagination info 👇
+      totalCards,
+      currentPage: page,
+      totalPages: Math.ceil(totalCards / limit),
+      cardsOnThisPage: cards.length,
+
       data: {
         heading,
         cards,
       },
-      count: cards.length,
     });
 
   } catch (err) {
