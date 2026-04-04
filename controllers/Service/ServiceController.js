@@ -61,7 +61,13 @@ exports.getAllService = async (req, res) => {
           as: "headingData",
         },
       },
-      { $unwind: "$headingData" }, 
+      {
+        // ✅ FIX ONLY HERE
+        $unwind: {
+          path: "$headingData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           title: 1,
@@ -120,7 +126,13 @@ exports.getServiceById = async (req, res) => {
           as: "headingData",
         },
       },
-      { $unwind: "$headingData" },
+      {
+        // ✅ SAME FIX HERE ALSO
+        $unwind: {
+          path: "$headingData",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $project: {
           title: 1,
@@ -155,6 +167,7 @@ exports.getServiceById = async (req, res) => {
     });
   }
 };
+
 
 // ==========================
 // ✅ UPDATE
