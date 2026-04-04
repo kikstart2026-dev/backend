@@ -56,8 +56,8 @@ exports.getAllCards = async (req, res) => {
   try {
     // pagination params
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 4;
-    const skip = (page - 1) * limit;
+    const limit = req.query.limit ? Number(req.query.limit) : null;
+    const skip = limit ? (page - 1) * limit : 0;
 
     // total count (without aggregation)
     const totalData = await WhyChooseUsCardModel.aggregate([
@@ -75,23 +75,12 @@ exports.getAllCards = async (req, res) => {
 
     const totalCards = totalData[0]?.total || 0;
 
-    const data = await WhyChooseUsCardModel.aggregate([
-      {
-        $lookup: {
-          from: "headings",
-          localField: "headingId",
-          foreignField: "_id",
-          as: "headingData",
-        },
-      },
-      { $unwind: "$headingData" },
+const data = await WhyChooseUsCardModel.aggregate([
+  { $lookup: { from: "headings", localField: "headingId", foreignField: "_id", as: "headingData" }},
+  { $unwind: "$headingData" },
+  { $sort: { createdAt: 1 } },
 
-      // SORT (optional but recommended)
-      { $sort: { createdAt: 1 } },
-
-      // PAGINATION
-      { $skip: skip },
-      { $limit: limit },
+  ...(limit ? [{ $skip: skip }, { $limit: limit }] : []),
 
       {
         $project: {
