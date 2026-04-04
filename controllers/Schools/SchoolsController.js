@@ -54,7 +54,7 @@ exports.createSchool = async (req, res) => {
 exports.getSchools = async (req, res) => {
   try {
     const page = Number(req.query.page) || 1;
-    const limit = Number(req.query.limit) || 6;
+    const limit = Number(req.query.limit) || 9;
 
     const skip = (page - 1) * limit;
 
