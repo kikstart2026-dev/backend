@@ -52,6 +52,11 @@ exports.createService = async (req, res) => {
 // ==========================
 exports.getAllService = async (req, res) => {
   try {
+    // ✅ query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 9;
+    const skip = (page - 1) * limit;
+
     const data = await ServiceModel.aggregate([
       {
         $lookup: {
@@ -62,7 +67,6 @@ exports.getAllService = async (req, res) => {
         },
       },
       {
-        // ✅ FIX ONLY HERE
         $unwind: {
           path: "$headingData",
           preserveNullAndEmptyArrays: true,
@@ -81,11 +85,19 @@ exports.getAllService = async (req, res) => {
           "headingData.description": 1,
         },
       },
+      { $skip: skip },   // ✅ ADD
+      { $limit: limit }, // ✅ ADD
     ]);
+
+    // ✅ total count
+    const total = await ServiceModel.countDocuments();
 
     res.status(200).json({
       status: "success",
       results: data.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       data,
     });
 
