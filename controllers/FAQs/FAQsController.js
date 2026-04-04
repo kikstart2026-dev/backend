@@ -41,7 +41,24 @@ exports.createFaq = async (req, res) => {
 exports.getFaqs = async (req, res) => {
   try {
 
+    // ✅ QUERY PARAMS
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
+    const skip = (page - 1) * limit;
+
+    // ✅ NEW: ACTIVE FILTER
+    const onlyActive = req.query.active === "true";
+    const matchStage = onlyActive ? { isActive: true } : {};
+
+    // ✅ TOTAL COUNT (WITH FILTER)
+    const total = await Faq.countDocuments(matchStage);
+
+    // ✅ MAIN DATA
     const faqs = await Faq.aggregate([
+      {
+        $match: matchStage   // ✅ ADD THIS (important)
+      },
       {
         $lookup: {
           from: "headings",
@@ -58,9 +75,14 @@ exports.getFaqs = async (req, res) => {
       },
       {
         $sort: {
-          // isActive: -1,   // ✅ active first
           createdAt: -1
         }
+      },
+      {
+        $skip: skip
+      },
+      {
+        $limit: limit
       },
       {
         $project: {
@@ -80,7 +102,10 @@ exports.getFaqs = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      results: faqs.length,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
       data: faqs
     });
 
