@@ -14,12 +14,12 @@ exports.createService = async (req, res) => {
       });
     }
 
-    const { headingId, title, details, image } = req.body;
+    const { headingId, title, details, image, video, details2 } = req.body;
 
-    if (!headingId || !title || !details || !image) {
+    if (!headingId || !title || !details || !image || !video || !details2) {
       return res.status(400).json({
         status: "error",
-        message: "headingId, title, details & image are required",
+        message: "headingId, title, details, image, video & details2 are required",
       });
     }
 
@@ -28,6 +28,8 @@ exports.createService = async (req, res) => {
       title,
       details,
       image,
+      video,
+      details2,
     });
 
     res.status(201).json({
@@ -65,6 +67,8 @@ exports.getAllService = async (req, res) => {
           title: 1,
           details: 1,
           image: 1,
+          video: 1,
+          details2: 1,
           "headingData._id": 1,
           "headingData.tagline": 1,
           "headingData.heading": 1,
@@ -122,6 +126,8 @@ exports.getServiceById = async (req, res) => {
           title: 1,
           details: 1,
           image: 1,
+          video: 1,
+          details2: 1,
           "headingData._id": 1,
           "headingData.tagline": 1,
           "headingData.heading": 1,
@@ -150,7 +156,6 @@ exports.getServiceById = async (req, res) => {
   }
 };
 
-
 // ==========================
 // ✅ UPDATE
 // ==========================
@@ -163,11 +168,11 @@ exports.updateService = async (req, res) => {
       });
     }
 
-    const { headingId, title, details, image } = req.body;
+    const { headingId, title, details, image, video, details2 } = req.body;
 
     const updatedData = await ServiceModel.findByIdAndUpdate(
       req.params.id,
-      { headingId, title, details, image },
+      { headingId, title, details, image, video, details2 },
       { new: true }
     );
 

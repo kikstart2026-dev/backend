@@ -18,6 +18,14 @@ const ServiceSchema = new mongoose.Schema(
     image: {
       type: String,
       required: true,
+    },
+    video: {
+      type: String,
+      required: true,
+    },
+    details2: {
+      type: String,
+      required: true,
     }
   },
   { timestamps: true }
