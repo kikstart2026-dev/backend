@@ -38,5 +38,6 @@ router.post("/resend-otp", adminController.adminResendOtp);
 router.post("/forgot-password", adminController.adminForgotPassword);
 router.post("/reset-password", adminController.adminResetPassword);
 router.post("/logout", adminController.adminLogout);
+router.post("/google", adminController.adminGoogleAuth);
 
 module.exports = router;
