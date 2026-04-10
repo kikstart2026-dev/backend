@@ -370,11 +370,44 @@ exports.adminGoogleAuth = async (req, res) => {
 // ================= LOGOUT =========================
 // =================================================
 exports.adminLogout = async (req, res) => {
-  res.status(200).json({
-    message: "Admin logged out successfully",
-  });
-};
+  try {
+    const { email } = req.body;
 
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    // ✅ Update fields as requested
+    user.isVerified = false;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+
+    await user.save();
+
+    await sendMail(
+      user.email,
+      "We’ll Miss You Already 💛 | KikStart",
+      emailTemplate(
+        "See You Again Soon 👋",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>You’ve successfully logged out.</p>
+         <p>Come back soon — something exciting is waiting 🚀</p>`,
+      ),
+    );
+
+    res.status(200).json({ message: "Logged out successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 
 // =================================================
