@@ -3,30 +3,40 @@ const router = express.Router();
 const upload = require("../middleware/uploadMiddleware");
 
 const adminController = require("../controllers/adminAuthController");
-const { protect, adminOnly, superAdminOnly } = require("../middleware/adminMiddleware");
+const { protect, adminOnly } = require("../middleware/adminMiddleware");
 
-// ✅ Both admin & superadmin can view users
+// ✅ Admin can view users
 router.get("/users", protect, adminOnly, adminController.getAllUsers);
 
-// ✅ Get single user by ID
+// ✅ Get single user
 router.get("/user/:id", protect, adminOnly, adminController.getUserById);
 
-// 🔥 Only SuperAdmin can update
-router.put(
-  "/user/:id",
+// 🔥 Request update (NEW SYSTEM)
+router.post(
+  "/user/:id/request-update",
   protect,
-  superAdminOnly,
+  adminOnly,
   upload.single("image"),
-  adminController.updateUserByAdmin
+  adminController.requestUpdateUser
 );
 
-// 🔥 Only SuperAdmin can delete single
-router.delete("/user/:id", protect, superAdminOnly, adminController.deleteSingleUser);
+// ✅ Approve / Reject (email links)
+router.get("/approve/:token", adminController.approveUpdate);
+router.get("/reject/:token", adminController.rejectUpdate);
 
-// 🔥 Only SuperAdmin can delete multiple
-router.delete("/users/delete-multiple", protect, superAdminOnly, adminController.deleteMultipleUsers);
+// ✅ Delete
+router.delete("/user/:id", protect, adminOnly, adminController.deleteSingleUser);
 
-// 🔥 Only SuperAdmin can delete all
-router.delete("/users/delete-all", protect, superAdminOnly, adminController.deleteAllUsers);
+router.delete("/users/delete-multiple", protect, adminOnly, adminController.deleteMultipleUsers);
+
+router.delete("/users/delete-all", protect, adminOnly, adminController.deleteAllUsers);
+
+
+router.post("/login", adminController.adminLogin);
+router.post("/verify-otp", adminController.adminOtpVerify);
+router.post("/resend-otp", adminController.adminResendOtp);
+router.post("/forgot-password", adminController.adminForgotPassword);
+router.post("/reset-password", adminController.adminResetPassword);
+router.post("/logout", adminController.adminLogout);
 
 module.exports = router;
