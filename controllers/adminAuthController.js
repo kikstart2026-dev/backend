@@ -1,10 +1,21 @@
+const axios = require("axios");
+const { google } = require("googleapis");
+
 const User = require("../models/authModel");
 const UpdateRequest = require("../models/updateRequestModel");
 const crypto = require("crypto");
 const { sendMail } = require("../middleware/sendMail");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
 const jwtSecret = process.env.TOKEN_SECRET;
+
+// 🔥 GOOGLE CONFIG
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "postmessage"
+);
 
 // ================= TOKEN =================
 const generateToken = (user) => {
@@ -32,6 +43,11 @@ const emailTemplate = (title, content) => {
   `;
 };
 
+
+
+// =================================================
+// ================= ADMIN LOGIN ====================
+// =================================================
 exports.adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -41,12 +57,15 @@ exports.adminLogin = async (req, res) => {
       role: "admin",
     });
 
-    if (!user) return res.status(404).json({ message: "Admin not found" });
-    
+    if (!user) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(401).json({ message: "Incorrect password" });
+    }
 
     const otpData = generateOtp();
 
@@ -73,6 +92,11 @@ exports.adminLogin = async (req, res) => {
   }
 };
 
+
+
+// =================================================
+// ================= OTP VERIFY =====================
+// =================================================
 exports.adminOtpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -82,7 +106,9 @@ exports.adminOtpVerify = async (req, res) => {
       role: "admin",
     });
 
-    if (!user) return res.status(404).json({ message: "Admin not found" });
+    if (!user) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
     if (
       user.otp !== Number(otp) ||
@@ -96,6 +122,7 @@ exports.adminOtpVerify = async (req, res) => {
 
     user.otp = undefined;
     user.otpExpiry = undefined;
+    user.isVerified = true;
     await user.save();
 
     const token = generateToken(user);
@@ -107,6 +134,10 @@ exports.adminOtpVerify = async (req, res) => {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
+        phone: user.phone,
+        location: user.location,
+        passcode: user.passcode,
+        image: user.image,
         role: user.role,
       },
     });
@@ -116,6 +147,11 @@ exports.adminOtpVerify = async (req, res) => {
   }
 };
 
+
+
+// =================================================
+// ================= RESEND OTP =====================
+// =================================================
 exports.adminResendOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -125,7 +161,9 @@ exports.adminResendOtp = async (req, res) => {
       role: "admin",
     });
 
-    if (!user) return res.status(404).json({ message: "Admin not found" });
+    if (!user) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
     const otpData = generateOtp();
 
@@ -142,13 +180,20 @@ exports.adminResendOtp = async (req, res) => {
       )
     );
 
-    res.status(200).json({ message: "OTP resent successfully" });
+    res.status(200).json({
+      message: "OTP resent successfully",
+    });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+
+
+// =================================================
+// ================= FORGOT PASSWORD ================
+// =================================================
 exports.adminForgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -158,7 +203,9 @@ exports.adminForgotPassword = async (req, res) => {
       role: "admin",
     });
 
-    if (!user) return res.status(404).json({ message: "Admin not found" });
+    if (!user) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
     const otpData = generateOtp();
 
@@ -175,19 +222,28 @@ exports.adminForgotPassword = async (req, res) => {
       )
     );
 
-    res.status(200).json({ message: "OTP sent to email" });
+    res.status(200).json({
+      message: "OTP sent to email",
+    });
 
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
+
+
+// =================================================
+// ================= RESET PASSWORD =================
+// =================================================
 exports.adminResetPassword = async (req, res) => {
   try {
     const { email, otp, password, confirmpass } = req.body;
 
     if (password !== confirmpass) {
-      return res.status(400).json({ message: "Passwords do not match" });
+      return res.status(400).json({
+        message: "Passwords do not match",
+      });
     }
 
     const user = await User.findOne({
@@ -195,7 +251,9 @@ exports.adminResetPassword = async (req, res) => {
       role: "admin",
     });
 
-    if (!user) return res.status(404).json({ message: "Admin not found" });
+    if (!user) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
 
     if (
       user.otp !== Number(otp) ||
@@ -222,13 +280,106 @@ exports.adminResetPassword = async (req, res) => {
   }
 };
 
+
+
+// =================================================
+// ================= ADMIN GOOGLE LOGIN 🔥 =========
+// =================================================
+exports.adminGoogleAuth = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        message: "Google code is required",
+      });
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const userRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      }
+    );
+
+    const { email, name, picture } = userRes.data;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Google email not found",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+      role: "admin",
+    });
+
+    if (!user) {
+      return res.status(403).json({
+        message: "Access denied. Admin only ❌",
+      });
+    }
+
+    // optional image update
+    if (!user.image) {
+      user.image = picture || null;
+      await user.save();
+    }
+
+    const token = generateToken(user);
+
+    await sendMail(
+      user.email,
+      "Admin Login via Google",
+      emailTemplate(
+        "Admin Login Successful",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>You logged in via Google successfully.</p>`
+      )
+    );
+
+    res.status(200).json({
+      message: "Admin Google login successful",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: user.role,
+        image: user.image || null,
+      },
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
+  }
+};
+
+
+
+// =================================================
+// ================= LOGOUT =========================
+// =================================================
 exports.adminLogout = async (req, res) => {
   res.status(200).json({
     message: "Admin logged out successfully",
   });
 };
 
-// ================== REQUEST UPDATE ==================
+
+
+// =================================================
+// ================= REQUEST UPDATE =================
+// =================================================
 exports.requestUpdateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -238,7 +389,6 @@ exports.requestUpdateUser = async (req, res) => {
 
     const token = crypto.randomBytes(32).toString("hex");
 
-    // ✅ Handle updates + image
     const updates = { ...req.body };
     if (req.file) {
       updates.image = req.file.path;
@@ -258,11 +408,8 @@ exports.requestUpdateUser = async (req, res) => {
       "Approve Profile Update Request",
       `
         <h2>Profile Update Request</h2>
-        <p>Admin requested changes to your account.</p>
-        <p>Please choose:</p>
-        <a href="${approveLink}" style="color:green;">✅ Approve</a><br/><br/>
-        <a href="${rejectLink}" style="color:red;">❌ Reject</a>
-        <p>This link will expire in 10 minutes ⏳</p>
+        <a href="${approveLink}">✅ Approve</a><br/>
+        <a href="${rejectLink}">❌ Reject</a>
       `
     );
 
@@ -275,28 +422,25 @@ exports.requestUpdateUser = async (req, res) => {
   }
 };
 
-// ================== APPROVE ==================
+
+
+// =================================================
+// ================= APPROVE ========================
+// =================================================
 exports.approveUpdate = async (req, res) => {
   try {
     const request = await UpdateRequest.findOne({ token: req.params.token });
 
-    if (!request) {
-      return res.status(404).send("Invalid request");
-    }
+    if (!request) return res.status(404).send("Invalid request");
 
-    if (request.status !== "pending") {
-      return res.send("Already processed");
-    }
+    if (request.status !== "pending") return res.send("Already processed");
 
-    // ⏳ Check expiry
     if (request.expiresAt < Date.now()) {
       return res.status(400).send("Request expired");
     }
 
     const user = await User.findById(request.userId);
-    if (!user) return res.status(404).send("User not found");
 
-    // 🔐 SAFE UPDATE ONLY
     const allowedFields = ["fullname", "phone", "location", "image"];
 
     allowedFields.forEach((field) => {
@@ -317,18 +461,18 @@ exports.approveUpdate = async (req, res) => {
   }
 };
 
-// ================== REJECT ==================
+
+
+// =================================================
+// ================= REJECT =========================
+// =================================================
 exports.rejectUpdate = async (req, res) => {
   try {
     const request = await UpdateRequest.findOne({ token: req.params.token });
 
-    if (!request) {
-      return res.status(404).send("Invalid request");
-    }
+    if (!request) return res.status(404).send("Invalid request");
 
-    if (request.status !== "pending") {
-      return res.send("Already processed");
-    }
+    if (request.status !== "pending") return res.send("Already processed");
 
     request.status = "rejected";
     await request.save();
@@ -340,7 +484,11 @@ exports.rejectUpdate = async (req, res) => {
   }
 };
 
-// ================== GET ALL USERS ==================
+
+
+// =================================================
+// ================= USERS ==========================
+// =================================================
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -349,42 +497,37 @@ exports.getAllUsers = async (req, res) => {
       total: users.length,
       users,
     });
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// ================== GET SINGLE USER ==================
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.status(200).json({
-      user,
-    });
+    res.status(200).json({ user });
+
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// ================== DELETE SINGLE USER ==================
+
+
+// =================================================
+// ================= DELETE =========================
+// =================================================
 exports.deleteSingleUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const user = await User.findById(req.params.id);
 
-    const user = await User.findById(id);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     await user.deleteOne();
 
@@ -397,16 +540,9 @@ exports.deleteSingleUser = async (req, res) => {
   }
 };
 
-// ================== DELETE MULTIPLE USERS ==================
 exports.deleteMultipleUsers = async (req, res) => {
   try {
     const { userIds } = req.body;
-
-    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      return res.status(400).json({
-        message: "Please provide userIds array",
-      });
-    }
 
     const result = await User.deleteMany({
       _id: { $in: userIds },
@@ -422,13 +558,12 @@ exports.deleteMultipleUsers = async (req, res) => {
   }
 };
 
-// ================== DELETE ALL USERS ==================
 exports.deleteAllUsers = async (req, res) => {
   try {
     const result = await User.deleteMany({});
 
     res.status(200).json({
-      message: "All users deleted successfully 🚨",
+      message: "All users deleted successfully",
       deletedCount: result.deletedCount,
     });
 
