@@ -5,7 +5,7 @@ const { createRole, getRoles, updateRole, deleteRole } = require("../../controll
 // RoleRoute.js file-e
 const checkPermission = require("../../middleware/permissionMiddleware"); // Import korun
 
-router.post("/",auth, checkPermission("create"), createRole);
+router.post("/", auth, checkPermission("create"), createRole);
 router.get("/", auth, checkPermission("read"), getRoles);
 router.put("/:id", auth, checkPermission("update"), updateRole);
 router.delete("/:id", auth, checkPermission("delete"), deleteRole);

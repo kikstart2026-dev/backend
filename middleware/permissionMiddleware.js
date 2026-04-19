@@ -18,6 +18,8 @@ const checkPermission = (action) => {
       return next();
     }
 
+    
+
     if (!hasPermission) {
       return res.status(403).json({ 
         message: `Access Denied: You don't have '${action}' permission` 
