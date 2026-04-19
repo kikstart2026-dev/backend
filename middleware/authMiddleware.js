@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/authModel"); // Path thik ache kina check korun
+const User = require("../models/authModel"); 
 
-// function-er age 'async' boshiye din
+
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.header("Authorization");
 

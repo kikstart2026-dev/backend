@@ -64,7 +64,7 @@ app.use(
 
 app.use("/api/v1/admin", adminAuthRouter);
 app.use("/api/v1/admin/roles",roleRouter);
-app.use("/api/v1/admin/users", userRouter);
+app.use("/api/v1/admin/users",authMiddleware, userRouter);
 
 app.use("/api/v1/admin/home-banner",authMiddleware, HomeBannerAdminRouter);
 app.use("/api/v1/user/home-banner", HomeBannerUserRouter);

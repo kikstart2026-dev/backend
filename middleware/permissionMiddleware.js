@@ -14,8 +14,9 @@ const checkPermission = (action) => {
     }
 
     // 3. Dynamic Key Check (Logic: permissions['read'] === true)
-    // Jodi permissions object hoy tobe nicher line thik ache
-    const hasPermission = permissions[action] === true;
+    if (permissions && (permissions[action] === true || String(permissions[action]) === "true")) {
+      return next();
+    }
 
     if (!hasPermission) {
       return res.status(403).json({ 
