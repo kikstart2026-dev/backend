@@ -56,11 +56,16 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["user", "coach", "admin", "superadmin"],
+      enum: ["user", "admin", "subadmin"],
       default: "user",
     },
+
+    dynamicRole: {
+      type: String,
+      default: null, // e.g. "manager", "editor"
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("KikstartUser", userSchema);
