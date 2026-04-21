@@ -4,10 +4,10 @@ const mongoose = require("mongoose");
 // CREATE
 exports.createPermission = async (req, res) => {
   try {
-    const { role, module, create, view, edit, delete: del } = req.body;
+    const { dynamicRole, module, create, view, edit, delete: del } = req.body;
 
     const permission = await Permission.create({
-      role,
+      dynamicRole,
       module,
       create,
       view,
@@ -41,7 +41,7 @@ exports.getPermissions = async (req, res) => {
       },
       {
         $project: {
-          role: 1,
+          dynamicRole: 1,
           create: 1,
           view: 1,
           edit: 1,

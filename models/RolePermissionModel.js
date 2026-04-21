@@ -2,10 +2,10 @@ const mongoose = require("mongoose");
 
 const permissionSchema = new mongoose.Schema(
   {
-    role: {
+    dynamicRole: {
       type: String,
-    //   enum: ["admin", "subadmin"],
       required: true,
+      unique:true,
     },
 
     module: {
