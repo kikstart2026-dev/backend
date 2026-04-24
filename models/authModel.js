@@ -55,15 +55,9 @@ const userSchema = new mongoose.Schema(
     },
 
     role: {
-<<<<<<< HEAD
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Role",
-      required: true,
-=======
       type: String,
       enum: ["user", "admin", "subadmin"],
       default: "user",
->>>>>>> c0426f98740f3f0cb08245199933432fc2d596fe
     },
 
     dynamicRole: {
