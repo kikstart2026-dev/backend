@@ -37,6 +37,11 @@ const adminAuthRouter = require("./routes/adminAuthRoutes");
 const roleRouter = require("./routes/Role/RoleRoute");
 const userRouter = require("./routes/User/UserRoute");
 
+const moduleRoutes = require("./routes/ModulesRoute");
+const permissionRoutes = require("./routes/RolePermissionRoute");
+const userRoutes = require("./routes/CreateUserRoute");
+
+
 
 require("dotenv").config();
 
@@ -94,6 +99,10 @@ app.use("/api/v1/user/faq", faqUserRouter);
 app.use("/api/v1", enqRouter);
 
 app.use("/api/v1", contactRouter);
+
+app.use("/api/v1/admin", moduleRoutes);
+app.use("/api/v1/admin", permissionRoutes);
+app.use("/api/v1/admin", userRoutes);
 
 app.use("/api/v1", AuthRouter);
 
