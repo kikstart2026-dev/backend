@@ -6,6 +6,7 @@ const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../middleware/sendMail");
+const Role = require("../models/Role/roleModel"); 
 
 const jwtSecret = process.env.TOKEN_SECRET;
 
@@ -17,7 +18,7 @@ const oauth2Client = new google.auth.OAuth2(
 
 // ================= TOKEN =================
 const generateToken = (user) => {
-  return jwt.sign({ id: user._id, role: user.role }, jwtSecret, {
+   return jwt.sign({ id: user._id }, jwtSecret, {
     expiresIn: "7d",
   });
 };
@@ -59,6 +60,7 @@ exports.signUp = async (req, res) => {
       passcode,
       password,
       confirmPass,
+      roleName,
     } = req.body;
 
     // ✅ Validation
@@ -69,13 +71,20 @@ exports.signUp = async (req, res) => {
       !location ||
       !passcode ||
       !password ||
-      !confirmPass
+      !confirmPass||
+      !roleName
     ) {
       return res.status(400).json({ message: "All fields required" });
     }
 
     if (password !== confirmPass) {
       return res.status(400).json({ message: "Passwords do not match" });
+    }
+
+    //  Role Name diye Database theke Role ID khuje ber kora
+    const foundRole = await Role.findOne({ name: roleName });
+    if (!foundRole) {
+      return res.status(404).json({ message: "Invalid Role Name! Please create the role first." });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -114,6 +123,7 @@ exports.signUp = async (req, res) => {
       existingEmailUser.passcode = passcode;
       existingEmailUser.password = hashedPassword;
       existingEmailUser.image = imagePath;
+      existingEmailUser.role = foundRole._id;
       existingEmailUser.otp = otpData.otp;
       existingEmailUser.otpExpiry = otpData.expiry;
 
@@ -150,6 +160,7 @@ exports.signUp = async (req, res) => {
       otp: otpData.otp,
       otpExpiry: otpData.expiry,
       isVerified: false,
+      role: foundRole._id,
     });
 
     await sendMail(
@@ -231,6 +242,8 @@ exports.otpVerify = async (req, res) => {
 
     await user.save();
 
+    const populatedUser = await user.populate("role");
+
     // ✅ GENERATE TOKEN HERE
     const token = generateToken(user);
 
@@ -253,7 +266,7 @@ exports.otpVerify = async (req, res) => {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
-        role: user.role,
+        role: populatedUser.role.name, 
         image: user.image, // 🔥 ADD THIS
       },
     });
@@ -346,9 +359,9 @@ exports.login = async (req, res) => {
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.isVerified) {
+    if (!user.isVerified) {
       return res.status(400).json({
-        message: "Account already verified",
+        message: "Please verify your account first.",
       });
     }
 
@@ -568,12 +581,15 @@ exports.googleAuth = async (req, res) => {
     });
 
     if (!user) {
+      const defaultRole = await Role.findOne({ name: "user" });
+
       user = await User.create({
         fullname: name,
         email: email.trim().toLowerCase(),
         password: "google-auth",
         isVerified: true,
         image: picture || null, // ✅ IMAGE SAVE
+        role: defaultRole._id,
       });
     } else {
       // ✅ If user exists but image not set, update from Google
@@ -584,6 +600,8 @@ exports.googleAuth = async (req, res) => {
     }
 
     const token = generateToken(user);
+
+    const populatedUser = await user.populate("role");
 
     // ⭐ MAIL SEND SAFE CHECK
     if (user.email) {
@@ -606,7 +624,7 @@ exports.googleAuth = async (req, res) => {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
-        role: user.role,
+        role: populatedUser.role.name, 
         image: user.image || null, // ✅ RETURN IMAGE
       },
     });
