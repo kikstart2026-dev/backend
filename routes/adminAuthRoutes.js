@@ -20,6 +20,8 @@ router.post(
   adminController.requestUpdateUser
 );
 
+
+
 // ✅ Approve / Reject (email links)
 router.get("/approve/:token", adminController.approveUpdate);
 router.get("/reject/:token", adminController.rejectUpdate);
