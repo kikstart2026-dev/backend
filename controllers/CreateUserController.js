@@ -2,6 +2,17 @@ const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const { sendMail } = require("../middleware/sendMail");
 
+const generatePassword = (length = 10) => {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let password = "";
+
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return password;
+};
+
 const emailTemplate = (title, content) => {
   return `
   <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
@@ -19,8 +30,12 @@ const emailTemplate = (title, content) => {
 
 exports.createSubAdmin = async (req, res) => {
   try {
-    const { fullname, email, password } = req.body;
+    const { fullname, email } = req.body;
 
+    // 🔥 auto generate password
+    const password = generatePassword(10);
+
+    // 🔐 hash
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
@@ -30,9 +45,7 @@ exports.createSubAdmin = async (req, res) => {
       role: "subadmin",
     });
 
-    // ❌ save() lagbe na (create already save kore)
-    // await newUser.save();
-
+    // 📧 send mail (same as before)
     await sendMail(
       email.trim().toLowerCase(),
       "🎉 Welcome to KikStart!",
@@ -40,7 +53,8 @@ exports.createSubAdmin = async (req, res) => {
         "You're Officially In 🚀",
         `<p>Hey <b>${newUser.fullname}</b>,</p>
          <p>Your account has been successfully created.</p>
-         <p>Your Kik Password is ${password}.</p>
+         <p>Your Kik Password is <b>${password}</b></p>
+         <p>Please login and change your password.</p>
          <p>Welcome to KikStart 💙</p>`
       ),
     );
