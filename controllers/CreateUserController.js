@@ -112,73 +112,73 @@ exports.getSubAdminById = async (req, res) => {
   }
 };
 
-exports.updateSubAdmin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// exports.updateSubAdmin = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password both are required",
-      });
-    }
+//     if (!email || !password) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Email and password both are required",
+//       });
+//     }
 
-    // 🔍 Step 1: Find user by email + role
-    const user = await User.findOne({
-      email: email.trim().toLowerCase(),
-      role: "subadmin",
-    });
+//     // 🔍 Step 1: Find user by email + role
+//     const user = await User.findOne({
+//       email: email.trim().toLowerCase(),
+//       role: "subadmin",
+//     });
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Subadmin not found with this email",
-      });
-    }
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Subadmin not found with this email",
+//       });
+//     }
 
-    // 🔐 Step 2: Check old password same kina
-    const isMatch = await bcrypt.compare(password, user.password);
+//     // 🔐 Step 2: Check old password same kina
+//     const isMatch = await bcrypt.compare(password, user.password);
 
-    if (isMatch) {
-      return res.status(400).json({
-        success: false,
-        message: "Same password not allowed",
-      });
-    }
+//     if (isMatch) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Same password not allowed",
+//       });
+//     }
 
-    // 🔑 Step 3: Hash new password
-    const hashedPassword = await bcrypt.hash(password, 10);
+//     // 🔑 Step 3: Hash new password
+//     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 🔄 Step 4: Update password
-    user.password = hashedPassword;
-    await user.save();
+//     // 🔄 Step 4: Update password
+//     user.password = hashedPassword;
+//     await user.save();
 
-    // 📧 Step 5: Send mail (only if password changed)
-    await sendMail(
-      email.trim().toLowerCase(),
-      "🔐 Password Updated Successfully",
-      emailTemplate(
-        "Your Password Has Been Changed 🚀",
-        `<p>Hey <b>${user.fullname || "User"}</b>,</p>
-         <p>Your password has been updated successfully.</p>
-         <p><b>New Password:</b> ${password}</p>
-         <p>If this wasn't you, contact support immediately.</p>`
-      )
-    );
+//     // 📧 Step 5: Send mail (only if password changed)
+//     await sendMail(
+//       email.trim().toLowerCase(),
+//       "🔐 Password Updated Successfully",
+//       emailTemplate(
+//         "Your Password Has Been Changed 🚀",
+//         `<p>Hey <b>${user.fullname || "User"}</b>,</p>
+//          <p>Your password has been updated successfully.</p>
+//          <p><b>New Password:</b> ${password}</p>
+//          <p>If this wasn't you, contact support immediately.</p>`
+//       )
+//     );
 
-    // ✅ Response
-    res.status(200).json({
-      success: true,
-      message: "Password updated successfully",
-    });
+//     // ✅ Response
+//     res.status(200).json({
+//       success: true,
+//       message: "Password updated successfully",
+//     });
 
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
 
 exports.deleteSubAdmin = async (req, res) => {
   try {
