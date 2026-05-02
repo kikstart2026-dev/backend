@@ -1,55 +1,34 @@
 const axios = require("axios");
-const { OAuth2Client } = require("google-auth-library");
 const { google } = require("googleapis");
 
 const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendMail } = require("../middleware/sendMail");
-const Role = require("../models/Role/roleModel"); 
 
 const jwtSecret = process.env.TOKEN_SECRET;
 
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
-  "postmessage",
+  "postmessage"
 );
 
 // ================= TOKEN =================
 const generateToken = (user) => {
-   return jwt.sign({ id: user._id }, jwtSecret, {
+  return jwt.sign({ id: user._id }, jwtSecret, {
     expiresIn: "7d",
   });
 };
 
-// ================= OTP GENERATOR =================
+// ================= OTP =================
 const generateOtp = () => {
-  const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
-  const expiry = Date.now() + 90 * 1000; //1.5 min (90 sec) valid
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  const expiry = Date.now() + 90 * 1000;
   return { otp, expiry };
 };
 
-// ================= EMAIL TEMPLATE =================
-
-const emailTemplate = (title, content) => {
-  return `
-  <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
-    <div style="max-width:600px; margin:auto; background:white; padding:30px; border-radius:12px;">
-      <h2 style="color:#4f46e5;">${title}</h2>
-      ${content}
-      <hr style="margin:30px 0"/>
-      <p style="font-size:14px; color:gray;">
-        Made with 💙 by Team KikStart
-      </p>
-    </div>
-  </div>
-  `;
-};
-
-// =================================================
-// ================= SIGNUP ========================
-// =================================================
+// ================= SIGNUP =================
 exports.signUp = async (req, res) => {
   try {
     const {
@@ -60,10 +39,9 @@ exports.signUp = async (req, res) => {
       passcode,
       password,
       confirmPass,
-      roleName,
+      dynamicRole, // 🔥 new
     } = req.body;
 
-    // ✅ Validation
     if (
       !fullname ||
       !email ||
@@ -71,8 +49,7 @@ exports.signUp = async (req, res) => {
       !location ||
       !passcode ||
       !password ||
-      !confirmPass||
-      !roleName
+      !confirmPass
     ) {
       return res.status(400).json({ message: "All fields required" });
     }
@@ -81,15 +58,8 @@ exports.signUp = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    //  Role Name diye Database theke Role ID khuje ber kora
-    const foundRole = await Role.findOne({ name: roleName });
-    if (!foundRole) {
-      return res.status(404).json({ message: "Invalid Role Name! Please create the role first." });
-    }
-
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 🔍 Find by email & phone separately
     const existingEmailUser = await User.findOne({ email: normalizedEmail });
     const existingPhoneUser = await User.findOne({ phone });
 
@@ -97,58 +67,49 @@ exports.signUp = async (req, res) => {
     const otpData = generateOtp();
     const imagePath = req.file ? req.file.path : null;
 
-    // ❌ CASE: Phone already used by another user
     if (
       existingPhoneUser &&
-      (!existingEmailUser || existingPhoneUser._id.toString() !== existingEmailUser._id.toString())
+      (!existingEmailUser ||
+        existingPhoneUser._id.toString() !==
+          existingEmailUser._id.toString())
     ) {
       return res.status(400).json({
         message: "Phone number already used",
       });
     }
 
-    // ✅ CASE 1 & 2: Email exists
+    // ===== EXISTING USER =====
     if (existingEmailUser) {
-      // ❌ যদি verified হয়
       if (existingEmailUser.isVerified === true) {
         return res.status(400).json({
           message: "User already exists. Please login.",
         });
       }
 
-      // ✅ যদি NOT verified → UPDATE (phone change allowed)
       existingEmailUser.fullname = fullname;
       existingEmailUser.phone = phone;
       existingEmailUser.location = location;
       existingEmailUser.passcode = passcode;
       existingEmailUser.password = hashedPassword;
       existingEmailUser.image = imagePath;
-      existingEmailUser.role = foundRole._id;
+      existingEmailUser.dynamicRole = dynamicRole || null;
       existingEmailUser.otp = otpData.otp;
       existingEmailUser.otpExpiry = otpData.expiry;
-
-      // ❌ email change korchi na (IMPORTANT 🔥)
 
       await existingEmailUser.save();
 
       await sendMail(
         normalizedEmail,
-        "🔐 Verify Your KikStart Account",
-        emailTemplate(
-          "Account Verification",
-          `<p>Hey <b>${fullname}</b>,</p>
-           <p>Your OTP is:</p>
-           <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-           <p>Valid for 90 sec ⏳</p>`
-        )
+        "Verify Account",
+        `<h1>${otpData.otp}</h1>`
       );
 
       return res.status(200).json({
-        message: "Your Account Already Exists! Please verify your account first.",
+        message: "Account exists, please verify",
       });
     }
 
-    // ✅ CASE 3: New user
+    // ===== NEW USER =====
     await User.create({
       fullname,
       email: normalizedEmail,
@@ -160,39 +121,25 @@ exports.signUp = async (req, res) => {
       otp: otpData.otp,
       otpExpiry: otpData.expiry,
       isVerified: false,
-      role: foundRole._id,
+      role: "user",
+      dynamicRole: dynamicRole || null,
     });
 
     await sendMail(
       normalizedEmail,
-      "🔐 Verify Your KikStart Account",
-      emailTemplate(
-        "Account Verification",
-        `<p>Hey <b>${fullname}</b>,</p>
-         <p>Your OTP is:</p>
-         <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 90 sec ⏳</p>`
-      )
+      "Verify Account",
+      `<h1>${otpData.otp}</h1>`
     );
 
     return res.status(201).json({
-      message: "Account created. OTP sent to email.",
+      message: "Account created. OTP sent",
     });
-
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        message: "Duplicate field error",
-      });
-    }
-
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-// =================================================
-// ================= OTP VERIFY ====================
-// =================================================
+// ================= OTP VERIFY =================
 exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -202,78 +149,49 @@ exports.otpVerify = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // 3️⃣ Check if already verified
     if (user.isVerified) {
       return res.status(400).json({
-        message: "Account already verified",
+        message: "Already verified",
       });
     }
 
-    // 4️⃣ Check OTP exists
-    if (!user.otp || !user.otpExpiry) {
-      return res.status(400).json({
-        message: "OTP not found. Please request a new one.",
-      });
-    }
-
-    // 5️⃣ Check expiry first
-    if (user.otpExpiry < Date.now()) {
+    if (!user.otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({
         message: "OTP expired",
       });
     }
 
-    // 6️⃣ Check OTP match
     if (user.otp !== Number(otp)) {
       return res.status(400).json({
         message: "Invalid OTP",
       });
     }
 
-    // 7️⃣ Update user
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
 
     await user.save();
 
-    const populatedUser = await user.populate("role");
-
-    // ✅ GENERATE TOKEN HERE
     const token = generateToken(user);
 
-    await sendMail(
-      user.email,
-      "🎉 Welcome to KikStart!",
-      emailTemplate(
-        "You're Officially In 🚀",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>Your account has been successfully verified.</p>
-         <p>Welcome to KikStart 💙</p>`,
-      ),
-    );
-
-    // ✅ SEND TOKEN IN RESPONSE
     res.status(200).json({
-      message: "Account verified successfully",
+      message: "Verified",
       token,
       user: {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
-        role: populatedUser.role.name, 
-        image: user.image, // 🔥 ADD THIS
+        role: user.role,
+        dynamicRole: user.dynamicRole, // 🔥 important
+        image: user.image,
       },
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 

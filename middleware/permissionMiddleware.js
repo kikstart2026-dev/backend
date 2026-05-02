@@ -1,32 +1,47 @@
-const checkPermission = (action) => {
-  return (req, res, next) => {
-    
-    // 1. User ba Role missing kina check
-    if (!req.user || !req.user.role) {
-      return res.status(401).json({ message: "Unauthorized: Role information missing" });
-    }
+const Permission = require("../models/Permission/permissionModel");
 
-    // 2. Role populate kora na thakle permissions pabe na
-    const permissions = req.user.role.permissions;
+const checkPermission = (module, action) => {
+  return async (req, res, next) => {
+    try {
+      const user = req.user;
 
-    if (!permissions) {
-      return res.status(403).json({ message: "Access Denied: No permissions assigned to this role" });
-    }
+      // 🔐 Auth check
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
 
-    // 3. Dynamic Key Check (Logic: permissions['read'] === true)
-    if (permissions && (permissions[action] === true || String(permissions[action]) === "true")) {
-      return next();
-    }
+      // 🔥 Admin bypass
+      if (user.role === "admin") {
+        return next();
+      }
 
-    
+      // ❌ dynamicRole check
+      if (!user.dynamicRole) {
+        return res.status(403).json({
+          message: "No dynamic role assigned",
+        });
+      }
 
-    if (!hasPermission) {
-      return res.status(403).json({ 
-        message: `Access Denied: You don't have '${action}' permission` 
+      // 🔍 Permission lookup
+      const permission = await Permission.findOne({
+        dynamicRole: user.dynamicRole,
+        module: module,
+      });
+
+      // ❌ deny
+      if (!permission || !permission[action]) {
+        return res.status(403).json({
+          message: `Access Denied: ${action} not allowed on ${module}`,
+        });
+      }
+
+      // ✅ allow
+      next();
+    } catch (error) {
+      res.status(500).json({
+        message: error.message,
       });
     }
-
-    next();
   };
 };
 

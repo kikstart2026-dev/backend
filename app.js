@@ -38,7 +38,7 @@ const roleRouter = require("./routes/Role/RoleRoute");
 const userRouter = require("./routes/User/UserRoute");
 
 const moduleRoutes = require("./routes/ModulesRoute");
-const permissionRoutes = require("./routes/RolePermissionRoute");
+const permissionRoutes = require("./routes/PermissionRoute");
 const userRoutes = require("./routes/CreateUserRoute");
 
 

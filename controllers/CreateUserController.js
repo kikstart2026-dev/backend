@@ -81,6 +81,7 @@ exports.getAllSubAdmins = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const users = await User.find({ role: "subadmin" })
+      .sort({ createdAt: -1 }) // 🔥 latest first
       .skip(skip)
       .limit(limit);
 
