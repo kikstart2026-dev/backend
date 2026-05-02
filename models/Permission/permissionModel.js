@@ -11,7 +11,7 @@ const permissionSchema = new mongoose.Schema(
     module: {
       type: String,
       required: true,
-      trim: true, // e.g. "user", "product"
+      trim: true, 
     },
 
     create: {
