@@ -34,9 +34,11 @@ const schoolAdminRouter = require("./routes/Schools/SchoolsAdminRoute");
 const schoolUserRouter = require("./routes/Schools/SchoolsUserRoute");
 
 const adminAuthRouter = require("./routes/adminAuthRoutes");
+const roleRouter = require("./routes/Role/RoleRoute");
+const userRouter = require("./routes/User/UserRoute");
 
-const moduleRoutes = require("./routes/ModulesRoute");
-const permissionRoutes = require("./routes/RolePermissionRoute");
+// const moduleRoutes = require("./routes/ModulesRoute");
+const permissionRoutes = require("./routes/PermissionRoute");
 const userRoutes = require("./routes/CreateUserRoute");
 
 
@@ -66,42 +68,45 @@ app.use(
 // Routes
 
 app.use("/api/v1/admin", adminAuthRouter);
+app.use("/api/v1/admin/roles",roleRouter);
+app.use("/api/v1/admin/users",authMiddleware, userRouter);
 
-app.use("/api/v1/admin/home-banner", HomeBannerAdminRouter);
+app.use("/api/v1/admin/home-banner",authMiddleware, HomeBannerAdminRouter);
 app.use("/api/v1/user/home-banner", HomeBannerUserRouter);
 
-app.use("/api/v1/admin/why-choose-us", WhyChooseUsAdminRouter);
+app.use("/api/v1/admin/why-choose-us", authMiddleware, WhyChooseUsAdminRouter);
 app.use("/api/v1/user/why-choose-us", WhyChooseUsUserRouter);
 
-app.use("/api/v1/admin/testimonal", testimonialAdminRouter);
+app.use("/api/v1/admin/testimonal",authMiddleware, testimonialAdminRouter);
 app.use("/api/v1/user/testimonal", testimonialUserRouter);
 
 app.use("/api/v1/media", mediaRoutes);
 
-app.use("/api/v1/admin/about-us", AboutUsAdminRouter );
+app.use("/api/v1/admin/about-us", authMiddleware, AboutUsAdminRouter );
 app.use("/api/v1/user/about-us", AboutUsUserRouter );
 
 
-app.use("/api/v1/admin/service", serviceAdminRouter);
+app.use("/api/v1/admin/service", authMiddleware,serviceAdminRouter);
 app.use("/api/v1/user/service", serviceUserRouter);
 
-app.use("/api/v1/admin/schools", schoolAdminRouter);
+app.use("/api/v1/admin/schools",authMiddleware, schoolAdminRouter);
 app.use("/api/v1/user/schools", schoolUserRouter);
 
-app.use("/api/v1/admin/faq", faqAdminRouter);
+app.use("/api/v1/admin/faq",authMiddleware, faqAdminRouter);
 app.use("/api/v1/user/faq", faqUserRouter);
 
-app.use("/api/v1", AllHeadingRouter);
 
 app.use("/api/v1", enqRouter);
 
 app.use("/api/v1", contactRouter);
 
-app.use("/api/v1/admin", moduleRoutes);
+// app.use("/api/v1/admin", moduleRoutes);
 app.use("/api/v1/admin", permissionRoutes);
 app.use("/api/v1/admin", userRoutes);
 
 app.use("/api/v1", AuthRouter);
+
+app.use("/api/v1/headings", AllHeadingRouter);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
