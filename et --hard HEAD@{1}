@@ -1,0 +1,92 @@
+[33maa9030f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mpoulomi-backend[m[33m, [m[1;31morigin/poulomi-backend[m[33m, [m[1;31morigin/Anushka-backend[m[33m)[m HEAD@{0}: pull origin Anushka-backend: Fast-forward
+[33m649af96[m HEAD@{1}: commit: ---
+[33mb9e3f5a[m[33m ([m[1;31morigin/soumyadeep-backend[m[33m)[m HEAD@{2}: pull origin soumyadeep-backend: Fast-forward
+[33meb51892[m HEAD@{3}: commit: admin role management
+[33mbf56a52[m HEAD@{4}: commit: pull from soumyadeep
+[33mc0426f9[m HEAD@{5}: pull origin soumyadeep-backend: Fast-forward
+[33mef5571a[m HEAD@{6}: commit: admin login
+[33mcf14307[m HEAD@{7}: pull origin soumyadeep-backend: Fast-forward
+[33m22a2683[m HEAD@{8}: commit: admin login
+[33m69e2d87[m HEAD@{9}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33mf60e4c2[m HEAD@{10}: pull origin Rupak-backend: Merge made by the 'ort' strategy.
+[33m952b6c7[m HEAD@{11}: commit: --
+[33m63e1c9b[m HEAD@{12}: pull origin Rupak-backend: updating HEAD
+[33m63e1c9b[m HEAD@{13}: pull origin soumyadeep-backend: Fast-forward
+[33m057e416[m HEAD@{14}: pull origin soumyadeep-backend: Fast-forward
+[33m9ce637a[m HEAD@{15}: pull origin himadri-backend: Merge made by the 'ort' strategy.
+[33mb050390[m HEAD@{16}: pull origin Ishita-Backend: Merge made by the 'ort' strategy.
+[33mcd5b3fe[m HEAD@{17}: commit: --
+[33m187a640[m HEAD@{18}: pull origin Anushka-backend: Fast-forward
+[33m37c19e2[m HEAD@{19}: pull origin Ishita-Backend: Fast-forward
+[33me606398[m HEAD@{20}: commit: school api
+[33m7a81e65[m HEAD@{21}: pull origin Ishita-Backend: Merge made by the 'ort' strategy.
+[33m5b5086e[m HEAD@{22}: commit: school
+[33m9442832[m HEAD@{23}: commit: toastify
+[33m47eebd0[m HEAD@{24}: commit: nothing
+[33mb415a2a[m HEAD@{25}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33m210c452[m HEAD@{26}: commit: nothing
+[33m85b5dc8[m HEAD@{27}: commit: pull soumyadeep
+[33m9d0f128[m HEAD@{28}: pull origin soumyadeep-backend: Fast-forward
+[33m57e19ca[m HEAD@{29}: pull origin Ishita-Backend: Fast-forward
+[33m88e0d16[m HEAD@{30}: commit: faq completed
+[33m8f090fa[m HEAD@{31}: pull origin Ishita-Backend: Merge made by the 'ort' strategy.
+[33m11b6f5a[m HEAD@{32}: commit: pull soumyadeep
+[33mc2582be[m HEAD@{33}: pull origin soumyadeep-backend: Fast-forward
+[33m58cc26c[m HEAD@{34}: pull origin Ishita-Backend: Fast-forward
+[33mc02f4ef[m HEAD@{35}: commit: ---
+[33mb2748fb[m HEAD@{36}: pull origin himadri-backend: Fast-forward
+[33m1f15fa5[m HEAD@{37}: pull origin Ishita-Backend: Fast-forward
+[33mc9f72c5[m HEAD@{38}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33m54c83d1[m HEAD@{39}: commit: -==-=-=-
+[33m924d94c[m HEAD@{40}: commit: user and admin routes
+[33m0676cdb[m HEAD@{41}: commit: user and admin routes
+[33m812bf43[m HEAD@{42}: pull origin Anushka-backend: Merge made by the 'ort' strategy.
+[33m33e9e1b[m HEAD@{43}: commit: user and admin routes
+[33m10f623d[m HEAD@{44}: pull origin Ishita-Backend: Merge made by the 'ort' strategy.
+[33m6efba55[m HEAD@{45}: commit: pull soumyadeep
+[33m33565b3[m HEAD@{46}: pull origin soumyadeep-backend: Fast-forward
+[33m5278900[m HEAD@{47}: commit: admin fix
+[33mecacc6f[m HEAD@{48}: commit: admin fix
+[33m97bc22a[m HEAD@{49}: commit: correction on home baneer
+[33m3df5ed0[m HEAD@{50}: commit: banner done
+[33mb83d0cb[m HEAD@{51}: commit: correction on enquery form
+[33mebe62b6[m HEAD@{52}: commit: --
+[33m2932fe7[m HEAD@{53}: pull origin Ishita-Backend: Fast-forward
+[33m009842e[m HEAD@{54}: pull origin soumyadeep-backend: Fast-forward
+[33mb086b31[m HEAD@{55}: commit: pull from soumya
+[33mcedc5fa[m HEAD@{56}: commit: add admin auth
+[33m89bceba[m HEAD@{57}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33m27566c6[m HEAD@{58}: commit: latest banner first
+[33md671bd7[m HEAD@{59}: pull origin Ishita-Backend: Fast-forward
+[33m68bd3bf[m HEAD@{60}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33m9349ac6[m HEAD@{61}: pull origin himadri-backend: Fast-forward
+[33m0b1040a[m HEAD@{62}: commit: all media api done
+[33mf813930[m HEAD@{63}: commit (merge): banner and why-choose-us done
+[33m8d2b6d0[m HEAD@{64}: commit: ---
+[33m23d6593[m HEAD@{65}: pull origin Ishita-Backend: Merge made by the 'ort' strategy.
+[33m5fc886f[m HEAD@{66}: commit: ---
+[33m4a8d2d0[m HEAD@{67}: commit: ---
+[33ma5cd4ee[m HEAD@{68}: commit: add home banner api
+[33m63a6381[m HEAD@{69}: commit: ----
+[33mfecae6a[m HEAD@{70}: commit: add middleware
+[33m83887a2[m HEAD@{71}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33mf1831fb[m HEAD@{72}: commit: make heading api
+[33m0a888db[m HEAD@{73}: commit: ...
+[33m574dfd3[m HEAD@{74}: commit (merge): otp verify
+[33mf65527e[m HEAD@{75}: commit: otp verify
+[33m893321d[m HEAD@{76}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33m1001041[m HEAD@{77}: pull origin soumyadeep-backend: Merge made by the 'ort' strategy.
+[33m6ffa9fb[m HEAD@{78}: commit: otp verify
+[33m876dcfa[m HEAD@{79}: pull origin soumyadeep-backend: Fast-forward
+[33mcb6c0df[m HEAD@{80}: commit: otp verify
+[33m2cb9609[m HEAD@{81}: commit: contact and sighup done
+[33m7fa116f[m HEAD@{82}: commit: vvbhjbvj
+[33mbf13e0a[m[33m ([m[1;32msoumyadeep-backend[m[33m, [m[1;32mpoulomi-backend2[m[33m)[m HEAD@{83}: checkout: moving from main to poulomi-backend
+[33m69482cc[m[33m ([m[1;32mmain[m[33m)[m HEAD@{84}: checkout: moving from poulomi-backend2 to main
+[33mbf13e0a[m[33m ([m[1;32msoumyadeep-backend[m[33m, [m[1;32mpoulomi-backend2[m[33m)[m HEAD@{85}: checkout: moving from bf13e0a707780ee3f397e1268d1900a68408cbba to poulomi-backend2
+[33mbf13e0a[m[33m ([m[1;32msoumyadeep-backend[m[33m, [m[1;32mpoulomi-backend2[m[33m)[m HEAD@{86}: checkout: moving from poulomi-backend2 to origin/poulomi-backend2
+[33mbf13e0a[m[33m ([m[1;32msoumyadeep-backend[m[33m, [m[1;32mpoulomi-backend2[m[33m)[m HEAD@{87}: checkout: moving from soumyadeep-backend to poulomi-backend2
+[33mbf13e0a[m[33m ([m[1;32msoumyadeep-backend[m[33m, [m[1;32mpoulomi-backend2[m[33m)[m HEAD@{88}: commit: add api
+[33mb11e87e[m HEAD@{89}: commit: AUTH COMMIT
+[33m69482cc[m[33m ([m[1;32mmain[m[33m)[m HEAD@{90}: checkout: moving from main to soumyadeep-backend
+[33m69482cc[m[33m ([m[1;32mmain[m[33m)[m HEAD@{91}: clone: from https://github.com/kikstart2026-dev/backend.git
