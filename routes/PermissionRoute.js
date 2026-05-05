@@ -20,7 +20,7 @@ router.post("/permission", protect, adminOnly, createPermission);
 router.put("/permission/:id", protect, adminOnly, updatePermission);
 
 // get modules
-router.get("/permission/modules", getModules);
+// router.get("/permission/modules", getModules);
 
 // ✅ GET ALL
 router.get("/permission", protect, adminOnly, getAllPermissions);

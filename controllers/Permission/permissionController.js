@@ -2,19 +2,19 @@ const Permission = require("../../models/Permission/permissionModel");
 
 
 //----------------------get all modules--------------
-exports.getModules = async (req, res) => {
-  try {
-    const modules = await Permission.distinct("module");
+// exports.getModules = async (req, res) => {
+//   try {
+//     const modules = await Permission.distinct("module");
 
-    return res.json({
-      data: modules,
-    });
-  } catch (err) {
-    return res.status(500).json({
-      message: err.message,
-    });
-  }
-};
+//     return res.json({
+//       data: modules,
+//     });
+//   } catch (err) {
+//     return res.status(500).json({
+//       message: err.message,
+//     });
+//   }
+// };
 
 // ================= CREATE SINGLE PERMISSION =================
 exports.createPermission = async (req, res) => {
