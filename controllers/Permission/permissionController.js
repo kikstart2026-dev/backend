@@ -161,10 +161,10 @@ exports.savePermissions = async (req, res) => {
       });
     }
 
-    // 🔥 delete old permissions for role
+    //  delete old permissions for role
     await Permission.deleteMany({ dynamicRole });
 
-    // 🔥 insert new permissions
+    //  insert new permissions
     const data = permissions.map((p) => ({
       dynamicRole,
       module: p.module,
