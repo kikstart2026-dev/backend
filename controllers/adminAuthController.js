@@ -54,7 +54,7 @@ exports.adminLogin = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },
     });
 
     if (!user) {
@@ -103,7 +103,7 @@ exports.adminOtpVerify = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },
     });
 
     if (!user) {
