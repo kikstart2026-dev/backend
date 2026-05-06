@@ -317,7 +317,7 @@ exports.adminGoogleAuth = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },  // ✅ correct
     });
 
     if (!user) {
