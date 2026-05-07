@@ -1,33 +1,82 @@
 const express = require("express");
 const router = express.Router();
+
 const controller = require("../../controllers/HomeBanner/HomeBannerController");
 
-// create
-router.post("/create", controller.createHomeBanner);
+const { protect } = require("../../middleware/adminMiddleware");
+
+const checkPermission = require("../../middleware/permissionMiddleware");
 
 
-// Get All
-router.get("/", controller.getAllHomeBanner);
+// ================= CREATE =================
+router.post(
+  "/create",
+  protect,
+  checkPermission("Home Banner Control", "create"),
+  controller.createHomeBanner
+);
 
 
-//active toggle
-router.put("/active/:id", controller.toggleActiveBanner);
+// ================= GET ALL =================
+router.get(
+  "/",
+  protect,
+  checkPermission("Home Banner Control", "read"),
+  controller.getAllHomeBanner
+);
 
-// Get By ID
-router.get("/:id", controller.getHomeBannerById);
+
+// ================= ACTIVE TOGGLE =================
+router.put(
+  "/active/:id",
+  protect,
+  checkPermission("Home Banner Control", "update"),
+  controller.toggleActiveBanner
+);
 
 
-// Update
-router.put("/:id", controller.updateHomeBanner);
+// ================= GET SINGLE =================
+router.get(
+  "/:id",
+  protect,
+  checkPermission("Home Banner Control", "read"),
+  controller.getHomeBannerById
+);
 
-// Delete Selective
-router.delete("/select/delete", controller.selectiveDeleteHomeBanner);
 
-// Delete All
-router.delete("/delete/all", controller.multipleDeleteHomeBanner);
+// ================= UPDATE =================
+router.put(
+  "/:id",
+  protect,
+  checkPermission("Home Banner Control", "update"),
+  controller.updateHomeBanner
+);
 
-// Delete Single
-router.delete("/:id", controller.singleDeleteHomeBanner);
 
+// ================= DELETE SELECTIVE =================
+router.delete(
+  "/select/delete",
+  protect,
+  checkPermission("Home Banner Control", "delete"),
+  controller.selectiveDeleteHomeBanner
+);
+
+
+// ================= DELETE ALL =================
+router.delete(
+  "/delete/all",
+  protect,
+  checkPermission("Home Banner Control", "delete"),
+  controller.multipleDeleteHomeBanner
+);
+
+
+// ================= DELETE SINGLE =================
+router.delete(
+  "/:id",
+  protect,
+  checkPermission("Home Banner Control", "delete"),
+  controller.singleDeleteHomeBanner
+);
 
 module.exports = router;
