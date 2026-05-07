@@ -3,28 +3,72 @@ const router = express.Router();
 
 const controller = require("../../controllers/FAQs/FAQsController");
 
-// Create
-router.post("/create", controller.createFaq);
+const { protect } = require("../../middleware/adminMiddleware");
 
-// Get All
-router.get("/", controller.getFaqs);
+const checkPermission = require("../../middleware/permissionMiddleware");
 
-// Get By ID
-router.get("/:id", controller.getSingleFaq);
+// ================= CREATE =================
+router.post(
+  "/create",
+  protect,
+  checkPermission("FAQ Control", "create"),
+  controller.createFaq
+);
 
-// Update
-router.put("/:id", controller.updateFaq);
+// ================= GET ALL =================
+router.get(
+  "/",
+  protect,
+  checkPermission("FAQ Control", "read"),
+  controller.getFaqs
+);
 
-// ✅ TOGGLE ACTIVE
-router.patch("/toggle/:id", controller.toggleActiveFaq);
+// ================= GET SINGLE =================
+router.get(
+  "/:id",
+  protect,
+  checkPermission("FAQ Control", "read"),
+  controller.getSingleFaq
+);
 
-// Delete Single
-router.delete("/:id", controller.deleteFaq);
+// ================= UPDATE =================
+router.put(
+  "/:id",
+  protect,
+  checkPermission("FAQ Control", "update"),
+  controller.updateFaq
+);
 
-// ✅ SELECTIVE DELETE
-router.post("/delete-selected", controller.selectiveDeleteFaq);
+// ================= ACTIVE TOGGLE =================
+router.patch(
+  "/toggle/:id",
+  protect,
+  checkPermission("FAQ Control", "update"),
+  controller.toggleActiveFaq
+);
 
-// ✅ DELETE ALL
-router.delete("/delete-all", controller.multipleDeleteFaq);
+// ================= DELETE SINGLE =================
+router.delete(
+  "/:id",
+  protect,
+  checkPermission("FAQ Control", "delete"),
+  controller.deleteFaq
+);
+
+// ================= DELETE SELECTIVE =================
+router.delete(
+  "/delete-selective",
+  protect,
+  checkPermission("FAQ Control", "delete"),
+  controller.selectiveDeleteFaq
+);
+
+// ================= DELETE ALL =================
+router.delete(
+  "/delete-all",
+  protect,
+  checkPermission("FAQ Control", "delete"),
+  controller.multipleDeleteFaq
+);
 
 module.exports = router;
