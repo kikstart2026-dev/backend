@@ -139,6 +139,7 @@ exports.adminOtpVerify = async (req, res) => {
         passcode: user.passcode,
         image: user.image,
         role: user.role,
+        dynamicRole: user.dynamicRole,
       },
     });
 
