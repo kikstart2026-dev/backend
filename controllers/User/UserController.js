@@ -3,10 +3,20 @@ const User = require("../../models/authModel");
 
 exports.getUsers = async (req, res) => {
   try {
-    const users = await User.find().populate("role");
-    res.json(users);
+    const users = await User.find().sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      users,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };
 
