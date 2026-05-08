@@ -43,6 +43,7 @@ const userRoutes = require("./routes/CreateUserRoute");
 
 const paymentRoutes = require('./routes/Payment/razorpayRoute');
 
+const ChildrenFormRouter = require("./routes/ChildrenForm/ChildrenFormRoute");
 
 require("dotenv").config();
 
@@ -108,6 +109,8 @@ app.use("/api/v1/admin", userRoutes);
 app.use("/api/v1", AuthRouter);
 
 app.use("/api/v1/headings", AllHeadingRouter);
+
+app.use("/api/v1/children", ChildrenFormRouter);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
