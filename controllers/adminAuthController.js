@@ -139,6 +139,7 @@ exports.adminOtpVerify = async (req, res) => {
         passcode: user.passcode,
         image: user.image,
         role: user.role,
+        dynamicRole: user.dynamicRole,
       },
     });
 
@@ -158,7 +159,7 @@ exports.adminResendOtp = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },
     });
 
     if (!user) {
@@ -200,7 +201,7 @@ exports.adminForgotPassword = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },
     });
 
     if (!user) {
@@ -248,7 +249,7 @@ exports.adminResetPassword = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },
     });
 
     if (!user) {
@@ -317,7 +318,7 @@ exports.adminGoogleAuth = async (req, res) => {
 
     const user = await User.findOne({
       email: email.trim().toLowerCase(),
-      role: "admin",
+      role: { $in: ["admin", "subadmin"] },  // ✅ correct
     });
 
     if (!user) {

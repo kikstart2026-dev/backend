@@ -3,26 +3,71 @@ const router = express.Router();
 
 const controller = require("../../controllers/WhyChooseUs/WhyChooseUsController");
 
-// Create
-router.post("/create", controller.createCard);
+const { protect } = require("../../middleware/adminMiddleware");
 
-// Get All
-router.get("/", controller.getAllCards);
+const checkPermission = require("../../middleware/permissionMiddleware");
 
-// Get By ID
-router.get("/:id", controller.getCardById);
 
-// Update 
-router.put("/:id", controller.updateCard);
+// ================= CREATE =================
+router.post(
+  "/create",
+  protect,
+  checkPermission("Why Choose Us Control", "create"),
+  controller.createCard
+);
 
-// Delete Selective
-router.delete("/select/delete", controller.selectiveDeleteCard);
 
-// Delete All
-router.delete("/delete/all", controller.multipleDeleteCard);
+// ================= GET ALL =================
+router.get(
+  "/",
+  protect,
+  checkPermission("Why Choose Us Control", "read"),
+  controller.getAllCards
+);
 
-// Delete Single
-router.delete("/:id", controller.singleDeleteCard);
 
+// ================= GET SINGLE =================
+router.get(
+  "/:id",
+  protect,
+  checkPermission("Why Choose Us Control", "read"),
+  controller.getCardById
+);
+
+
+// ================= UPDATE =================
+router.put(
+  "/:id",
+  protect,
+  checkPermission("Why Choose Us Control", "update"),
+  controller.updateCard
+);
+
+
+// ================= DELETE SELECTIVE =================
+router.delete(
+  "/select/delete",
+  protect,
+  checkPermission("Why Choose Us Control", "delete"),
+  controller.selectiveDeleteCard
+);
+
+
+// ================= DELETE ALL =================
+router.delete(
+  "/delete/all",
+  protect,
+  checkPermission("Why Choose Us Control", "delete"),
+  controller.multipleDeleteCard
+);
+
+
+// ================= DELETE SINGLE =================
+router.delete(
+  "/:id",
+  protect,
+  checkPermission("Why Choose Us Control", "delete"),
+  controller.singleDeleteCard
+);
 
 module.exports = router;

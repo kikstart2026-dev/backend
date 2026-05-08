@@ -1,13 +1,16 @@
 const Permission = require("../models/Permission/permissionModel");
 
-const checkPermission = (module, action) => {
+const checkPermission = (moduleName, action) => {
   return async (req, res, next) => {
     try {
       const user = req.user;
 
-      // 🔐 Auth check
+      // ❌ No user
       if (!user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized",
+        });
       }
 
       // 🔥 Admin bypass
@@ -15,30 +18,42 @@ const checkPermission = (module, action) => {
         return next();
       }
 
-      // ❌ dynamicRole check
+      // ❌ No dynamic role
       if (!user.dynamicRole) {
         return res.status(403).json({
-          message: "No dynamic role assigned",
+          success: false,
+          message: "No role assigned",
         });
       }
 
-      // 🔍 Permission lookup
+      // ✅ Find permission
       const permission = await Permission.findOne({
         dynamicRole: user.dynamicRole,
-        module: module,
+        module: moduleName,
       });
 
-      // ❌ deny
-      if (!permission || !permission[action]) {
+      // ❌ Permission not found
+      if (!permission) {
         return res.status(403).json({
-          message: `Access Denied: ${action} not allowed on ${module}`,
+          success: false,
+          message: "Permission not found",
         });
       }
 
-      // ✅ allow
+      // ❌ Action blocked
+      if (!permission[action]) {
+        return res.status(403).json({
+          success: false,
+          message: `You don't have permission to ${action} ${moduleName}`,
+        });
+      }
+
+      // ✅ Allow
       next();
+
     } catch (error) {
-      res.status(500).json({
+      return res.status(500).json({
+        success: false,
         message: error.message,
       });
     }

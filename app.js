@@ -41,6 +41,7 @@ const userRouter = require("./routes/User/UserRoute");
 const permissionRoutes = require("./routes/PermissionRoute");
 const userRoutes = require("./routes/CreateUserRoute");
 
+const paymentRoutes = require('./routes/Payment/razorpayRoute');
 
 const ChildrenFormRouter = require("./routes/ChildrenForm/ChildrenFormRoute");
 
@@ -117,5 +118,8 @@ app.get("/api/v1", authMiddleware, (req, res) => {
     user: req.user,
   });
 });
+
+
+app.use('/api/v1/payment', paymentRoutes);
 
 module.exports = app;

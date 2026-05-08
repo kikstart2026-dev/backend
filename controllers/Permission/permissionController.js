@@ -95,6 +95,63 @@ exports.getPermissionsByRole = async (req, res) => {
   }
 };
 
+
+
+
+exports.getSinglePermission = async (req, res) => {
+  try {
+
+    const { dynamicRole, moduleName } = req.body;
+
+    // ❌ Validation
+    if (!dynamicRole || !moduleName) {
+      return res.status(400).json({
+        success: false,
+        message: "dynamicRole and moduleName are required",
+      });
+    }
+
+    // ✅ Find Permission
+    const permission = await Permission.findOne({
+      dynamicRole,
+      module: moduleName,
+    });
+
+    // ❌ No permission
+    if (!permission) {
+      return res.status(404).json({
+        success: false,
+        message: "Permission not found",
+      });
+    }
+
+    // ✅ Send only needed data
+    return res.status(200).json({
+      success: true,
+
+      data: {
+        create: permission.create,
+        read: permission.read,
+        update: permission.update,
+        delete: permission.delete,
+      },
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+};
+
+
+
+
+
+
 // ================= UPDATE SINGLE PERMISSION =================
 exports.updatePermission = async (req, res) => {
   try {
