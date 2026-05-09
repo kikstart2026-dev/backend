@@ -16,6 +16,8 @@ exports.createChild = async (req, res) => {
       allergyDetails,
       prolongDisease,
       profileImage,
+      schoolName,
+      schoolLocation,
     } = req.body;
 
     if (
@@ -40,6 +42,8 @@ exports.createChild = async (req, res) => {
       allergyDetails,
       prolongDisease,
       profileImage,
+      schoolName,
+      schoolLocation,
     });
 
     return res.status(201).json({
@@ -137,7 +141,7 @@ exports.updateChild = async (req, res) => {
       });
     }
 
-    
+
     const {
       location,
       foodHabit,
@@ -224,7 +228,7 @@ exports.deleteChild = async (req, res) => {
     });
 
   }
-  
+
 };
 exports.deleteAllChild = async (req, res) => {
   try {
