@@ -15,7 +15,6 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage,
     } = req.body;
 
     if (
@@ -159,7 +158,6 @@ exports.updateChild = async (req, res) => {
       prolongDisease,
       profileImage,
     };
-
     const updatedChild = await child.findByIdAndUpdate(
       childId,
       updatedData,
