@@ -14,7 +14,6 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage,
       schoolName,
       schoolLocation,
     } = req.body;
