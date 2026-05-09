@@ -5,6 +5,7 @@ const child = require("../../models/ChildrenForm/ChildrenFormModel");
 
 exports.createChild = async (req, res) => {
   try {
+
     const {
       fullName,
       location,
@@ -14,16 +15,15 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      schoolName,
-      schoolLocation,
+      profileImage,
     } = req.body;
 
-    // ✅ FILE COMES FROM req.file (NOT req.body)
-    const profileImage = req.file
-      ? `/uploads/${req.file.filename}`
-      : null;
-
-    if (!fullName || !location || !age || !passCode) {
+    if (
+      !fullName ||
+      !location ||
+      !age ||
+      !passCode
+    ) {
       return res.status(400).json({
         success: false,
         message: "Required fields are missing",
@@ -40,8 +40,6 @@ exports.createChild = async (req, res) => {
       allergyDetails,
       prolongDisease,
       profileImage,
-      schoolName,
-      schoolLocation,
     });
 
     return res.status(201).json({
@@ -51,10 +49,12 @@ exports.createChild = async (req, res) => {
     });
 
   } catch (error) {
-    return res.status(500).json({
+
+    res.status(500).json({
       success: false,
       message: error.message,
     });
+
   }
 };
 
@@ -137,7 +137,7 @@ exports.updateChild = async (req, res) => {
       });
     }
 
-
+    
     const {
       location,
       foodHabit,
@@ -224,7 +224,7 @@ exports.deleteChild = async (req, res) => {
     });
 
   }
-
+  
 };
 exports.deleteAllChild = async (req, res) => {
   try {
