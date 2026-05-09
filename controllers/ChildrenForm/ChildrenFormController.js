@@ -139,6 +139,8 @@ exports.updateChild = async (req, res) => {
 
     
     const {
+      fullName,
+      age,
       location,
       foodHabit,
       allergy,
@@ -148,6 +150,8 @@ exports.updateChild = async (req, res) => {
     } = req.body;
 
     const updatedData = {
+      fullName,
+      age,
       location,
       foodHabit,
       allergy,
