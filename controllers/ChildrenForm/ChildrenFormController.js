@@ -14,8 +14,6 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      schoolName,
-      schoolLocation,
     } = req.body;
 
     // ✅ FILE COMES FROM req.file (NOT req.body)
@@ -40,8 +38,6 @@ exports.createChild = async (req, res) => {
       allergyDetails,
       prolongDisease,
       profileImage,
-      schoolName,
-      schoolLocation,
     });
 
     return res.status(201).json({
@@ -139,6 +135,8 @@ exports.updateChild = async (req, res) => {
 
 
     const {
+      fullName,
+      age,
       location,
       foodHabit,
       allergy,
@@ -148,6 +146,8 @@ exports.updateChild = async (req, res) => {
     } = req.body;
 
     const updatedData = {
+      fullName,
+      age,
       location,
       foodHabit,
       allergy,
@@ -155,7 +155,6 @@ exports.updateChild = async (req, res) => {
       prolongDisease,
       profileImage,
     };
-
     const updatedChild = await child.findByIdAndUpdate(
       childId,
       updatedData,

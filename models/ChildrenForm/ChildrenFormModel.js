@@ -50,16 +50,6 @@ const childrenSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-
-    schoolName: {
-      type: String,
-      trim: true,
-    },
-
-    schoolLocation: {
-      type: String,
-      trim: true,
-    },
   },
   { timestamps: true }
 );
