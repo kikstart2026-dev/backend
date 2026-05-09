@@ -15,19 +15,17 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
+      profileImage,   // ✅ ADD THIS
     } = req.body;
 
-    if (
-      !fullName ||
-      !location ||
-      !age ||
-      !passCode
-    ) {
+    if (!fullName || !location || !age || !passCode) {
       return res.status(400).json({
         success: false,
         message: "Required fields are missing",
       });
     }
+
+    
 
     const newChild = await child.create({
       fullName,
@@ -38,8 +36,10 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage,
+      profileImage: profileImage || "", // ✅ SAFE DEFAULT
     });
+
+    
 
     return res.status(201).json({
       success: true,
@@ -48,12 +48,10 @@ exports.createChild = async (req, res) => {
     });
 
   } catch (error) {
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
