@@ -8,7 +8,8 @@ const {
   getPermissionsByRole,
   deletePermission,
   savePermissions ,
-  getModules
+  getModules,
+  getSinglePermission
 } = require("../controllers/Permission/permissionController");
 
 const { protect, adminOnly } = require("../middleware/adminMiddleware");
@@ -33,5 +34,18 @@ router.delete("/permission/:id", protect, adminOnly, deletePermission);
 
 // 🔥 BULK SAVE (VERY IMPORTANT)
 router.post("/permission/save", protect, adminOnly, savePermissions);
+
+
+
+router.post(
+  "/permission/single",
+  protect,
+  // adminOnly,
+  getSinglePermission
+);
+
+
+
+
 
 module.exports = router;

@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const childController = require("../../controllers/ChildrenForm/ChildrenFormController");
+const upload = require("../../middleware/uploadMiddleware");
 
 
-router.post("/createChild",childController.createChild);
+router.post("/createChild",upload.single("profileImage"),childController.createChild);
 
 router.get("/getAllChild",childController.getAllChild);
 

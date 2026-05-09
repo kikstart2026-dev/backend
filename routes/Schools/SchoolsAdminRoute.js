@@ -1,48 +1,87 @@
 const express = require("express");
 const router = express.Router();
+
 const controller = require("../../controllers/Schools/SchoolsController");
+
+const { protect } = require("../../middleware/adminMiddleware");
+
+const checkPermission = require("../../middleware/permissionMiddleware");
+
 
 // ==========================
 // ✅ CREATE
 // ==========================
-router.post("/create", controller.createSchool);
+router.post(
+  "/create",
+  protect,
+  checkPermission("Interested Schools", "create"),
+  controller.createSchool
+);
 
 
 // ==========================
 // ✅ GET ALL
 // ==========================
-router.get("/", controller.getSchools);
+router.get(
+  "/",
+  protect,
+  checkPermission("Interested Schools", "read"),
+  controller.getSchools
+);
 
 
 // ==========================
 // ✅ GET BY ID
 // ==========================
-
-router.get("/:id", controller.getSingleSchool);
+router.get(
+  "/:id",
+  protect,
+  checkPermission("Interested Schools", "read"),
+  controller.getSingleSchool
+);
 
 
 // ==========================
 // ✅ UPDATE
 // ==========================
-router.put("/:id", controller.updateSchool);
+router.put(
+  "/:id",
+  protect,
+  checkPermission("Interested Schools", "update"),
+  controller.updateSchool
+);
 
 
 // ==========================
 // ✅ DELETE BY ID
 // ==========================
-router.delete("/:id", controller.deleteSchoolById);
+router.delete(
+  "/:id",
+  protect,
+  checkPermission("Interested Schools", "delete"),
+  controller.deleteSchoolById
+);
 
 
 // ==========================
 // ✅ DELETE ALL
 // ==========================
-router.delete("/", controller.deleteAllSchools);
+router.delete(
+  "/",
+  protect,
+  checkPermission("Interested Schools", "delete"),
+  controller.deleteAllSchools
+);
 
 
 // ==========================
 // ✅ DELETE SELECTED
 // ==========================
-router.post("/delete-selected", controller.deleteSelectedSchools);
-
+router.post(
+  "/delete-selected",
+  protect,
+  checkPermission("Interested Schools", "delete"),
+  controller.deleteSelectedSchools
+);
 
 module.exports = router;
