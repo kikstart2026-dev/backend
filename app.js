@@ -45,6 +45,8 @@ const paymentRoutes = require('./routes/Payment/razorpayRoute');
 
 const ChildrenFormRouter = require("./routes/ChildrenForm/ChildrenFormRoute");
 
+const SchoolDetailsRouter = require("./routes/SchoolDetails/SchoolDetailsRoute");
+
 require("dotenv").config();
 
 const app = express();
@@ -111,6 +113,8 @@ app.use("/api/v1", AuthRouter);
 app.use("/api/v1/headings", AllHeadingRouter);
 
 app.use("/api/v1/children", ChildrenFormRouter);
+
+app.use("/api/v1/school", SchoolDetailsRouter);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({

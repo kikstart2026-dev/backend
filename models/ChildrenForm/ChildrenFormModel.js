@@ -54,4 +54,4 @@ const childrenSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Children-Detail",childrenSchema);
+module.exports = mongoose.model("Children-Detail", childrenSchema);
