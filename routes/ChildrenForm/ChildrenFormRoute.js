@@ -11,7 +11,12 @@ router.get("/getAllChild",childController.getAllChild);
 
 router.get("/getChildById/:id",childController.getChildById);
 
-router.put("/updateChild/:id",childController.updateChild);
+// router.put("/updateChild/:id",childController.updateChild);
+router.put(
+  "/updateChild/:id",
+  upload.single("profileImage"),
+  childController.updateChild
+);
 
 router.delete("/deleteChild/:id",childController.deleteChild);
 
