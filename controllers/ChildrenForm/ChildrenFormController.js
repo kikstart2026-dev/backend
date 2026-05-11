@@ -156,8 +156,13 @@ exports.updateChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage,
+      // profileImage,
     } = req.body;
+
+     // ✅ IMAGE FIX (multer)
+    const imagePath = req.file
+  ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
+  : existingChild.profileImage;
 
     const updatedData = {
       fullName,
@@ -167,10 +172,11 @@ exports.updateChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
+      profileImage: imagePath,
 
-      // ✅ new image na hole old image thakbe
-      profileImage:
-        profileImage || existingChild.profileImage,
+      // // ✅ new image na hole old image thakbe
+      // profileImage:
+      //   profileImage || existingChild.profileImage,
     };
 
     const updatedChild = await child.findByIdAndUpdate(
