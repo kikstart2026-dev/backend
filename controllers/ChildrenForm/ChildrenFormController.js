@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const child = require("../../models/ChildrenForm/ChildrenFormModel");
+const path = require("path");
 
 
 
@@ -15,8 +16,14 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage,   // ✅ ADD THIS
     } = req.body;
+
+    const path = require("path");
+
+    // ✅ IMAGE PATH FROM MULTER
+    const profileImage = req.file
+      ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
+      : "";
 
     if (!fullName || !location || !age || !passCode) {
       return res.status(400).json({
@@ -24,8 +31,6 @@ exports.createChild = async (req, res) => {
         message: "Required fields are missing",
       });
     }
-
-    
 
     const newChild = await child.create({
       fullName,
@@ -36,10 +41,8 @@ exports.createChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage: profileImage || "", // ✅ SAFE DEFAULT
+      profileImage,
     });
-
-    
 
     return res.status(201).json({
       success: true,
@@ -48,10 +51,12 @@ exports.createChild = async (req, res) => {
     });
 
   } catch (error) {
+
     return res.status(500).json({
       success: false,
       message: error.message,
     });
+
   }
 };
 
@@ -134,7 +139,15 @@ exports.updateChild = async (req, res) => {
       });
     }
 
-    
+    const existingChild = await child.findById(childId);
+
+    if (!existingChild) {
+      return res.status(404).json({
+        success: false,
+        message: "Child profile not found",
+      });
+    }
+
     const {
       fullName,
       age,
@@ -154,20 +167,17 @@ exports.updateChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      profileImage,
+
+      // ✅ new image na hole old image thakbe
+      profileImage:
+        profileImage || existingChild.profileImage,
     };
+
     const updatedChild = await child.findByIdAndUpdate(
       childId,
       updatedData,
       { new: true }
     );
-
-    if (!updatedChild) {
-      return res.status(404).json({
-        success: false,
-        message: "Child profile not found",
-      });
-    }
 
     return res.status(200).json({
       success: true,
@@ -177,14 +187,13 @@ exports.updateChild = async (req, res) => {
 
   } catch (error) {
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
 
   }
 };
-
 
 
 
@@ -224,7 +233,7 @@ exports.deleteChild = async (req, res) => {
     });
 
   }
-  
+
 };
 exports.deleteAllChild = async (req, res) => {
   try {
