@@ -4,7 +4,10 @@ const { google } = require("googleapis");
 const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { sendMail } = require("../middleware/sendMail");
+const {
+  sendMail,
+  emailTemplate,
+} = require("../middleware/sendMail");
 
 const jwtSecret = process.env.TOKEN_SECRET;
 

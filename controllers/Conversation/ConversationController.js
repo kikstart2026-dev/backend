@@ -2,42 +2,100 @@ const { client, SERVICE_SID } = require("../../config/twilio");
 const twilio = require("twilio");
 
 const Conversation = require("../../models/Conversation/Conversation");
-
 exports.createConversation = async (req, res) => {
     try {
         const {
-            friendlyName,
             participants,
+            friendlyName,
             isGroup,
             groupAdmin,
             groupImage,
         } = req.body;
 
-        if (!friendlyName) {
+        if (
+            !participants ||
+            participants.length < 2
+        ) {
             return res.status(400).json({
                 success: false,
-                message: "friendlyName is required",
+                message:
+                    "Participants required",
             });
         }
 
-        const conversation = await client.conversations.v1
-            .services(SERVICE_SID)
-            .conversations.create({
-                friendlyName,
+        // ✅ EXISTING CHECK
+        const existingConversation =
+            await Conversation.findOne({
+                participants: {
+                    $all: participants,
+                    $size:
+                        participants.length,
+                },
             });
 
-        const savedConversation = await Conversation.create({
-            twilioConversationSid: conversation.sid,
-            friendlyName,
-            participants,
-            isGroup,
-            groupAdmin,
-            groupImage,
-        });
+        if (existingConversation) {
+            return res.status(200).json({
+                success: true,
+                conversation:
+                    existingConversation,
+            });
+        }
+
+        // ✅ CREATE TWILIO ROOM
+        const conversation =
+            await client.conversations.v1
+                .services(
+                    SERVICE_SID
+                )
+                .conversations.create({
+                    friendlyName:
+                        friendlyName ||
+                        "Private Chat",
+                });
+
+        // ✅ ADD PARTICIPANTS
+        for (const participant of participants) {
+            await client.conversations.v1
+                .services(
+                    SERVICE_SID
+                )
+                .conversations(
+                    conversation.sid
+                )
+                .participants.create({
+                    identity:
+                        participant.toString(),
+                });
+        }
+
+        // ✅ SAVE DB
+        const savedConversation =
+            await Conversation.create({
+                twilioConversationSid:
+                    conversation.sid,
+
+                friendlyName:
+                    friendlyName ||
+                    "Private Chat",
+
+                participants,
+
+                isGroup:
+                    isGroup || false,
+
+                groupAdmin:
+                    groupAdmin ||
+                    null,
+
+                groupImage:
+                    groupImage ||
+                    null,
+            });
 
         res.status(201).json({
             success: true,
-            conversation: savedConversation,
+            conversation:
+                savedConversation,
         });
     } catch (error) {
         res.status(500).json({
