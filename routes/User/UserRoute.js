@@ -1,9 +1,26 @@
-const router = require("express").Router();
-const auth = require("../../middleware/authMiddleware");
-const checkPermission = require("../../middleware/permissionMiddleware");
+const express = require("express");
+const router = express.Router();
+
 const { getUsers, deleteUser } = require("../../controllers/User/UserController");
 
-router.get("/",auth, checkPermission("read"), getUsers);
-router.delete("/:id",auth,  checkPermission("delete"), deleteUser);
+const { protect } = require("../../middleware/adminMiddleware");
+const checkPermission = require("../../middleware/permissionMiddleware");
+
+
+// ================= GET ALL USERS =================
+router.get(
+  "/",
+  protect,
+  checkPermission("User Control", "read"),
+  getUsers
+);
+
+// ================= DELETE USER =================
+router.delete(
+  "/:id",
+  protect,
+  checkPermission("User Control", "delete"),
+  deleteUser
+);
 
 module.exports = router;
