@@ -47,6 +47,10 @@ const ChildrenFormRouter = require("./routes/ChildrenForm/ChildrenFormRoute");
 
 const SchoolDetailsRouter = require("./routes/SchoolDetails/SchoolDetailsRoute");
 
+const ConversationRouter = require("./routes/Conversation/ConversationRoute");
+
+const MessageRouter = require("./routes/Conversation/MessageRoute");
+
 require("dotenv").config();
 
 const app = express();
@@ -115,6 +119,10 @@ app.use("/api/v1/headings", AllHeadingRouter);
 app.use("/api/v1/children", ChildrenFormRouter);
 
 app.use("/api/v1/school", SchoolDetailsRouter);
+
+app.use("/api/v1/conversation", ConversationRouter);
+
+app.use("/api/v1/message", MessageRouter);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
