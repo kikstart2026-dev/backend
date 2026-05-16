@@ -97,38 +97,61 @@ exports.getPermissionsByRole = async (req, res) => {
 
 
 
-
 exports.getSinglePermission = async (req, res) => {
   try {
+    const { role, dynamicRole, moduleName } = req.body;
 
-    const { dynamicRole, moduleName } = req.body;
-
-    // ❌ Validation
-    if (!dynamicRole || !moduleName) {
+    // ❌ Validation (only module required for non-admin flow later)
+    if (!role || !moduleName) {
       return res.status(400).json({
         success: false,
-        message: "dynamicRole and moduleName are required",
+        message: "role and moduleName are required",
       });
     }
 
-    // ✅ Find Permission
+    // 🔥 ADMIN → NO CHECKING AT ALL
+    if (role === "admin") {
+      return res.status(200).json({
+        success: true,
+        data: {
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
+        },
+      });
+    }
+
+    // 🔍 NON-ADMIN → dynamicRole required
+    if (!dynamicRole) {
+      return res.status(400).json({
+        success: false,
+        message: "dynamicRole is required for non-admin users",
+      });
+    }
+
+    // ✅ DB CHECK ONLY FOR NON-ADMIN
     const permission = await Permission.findOne({
       dynamicRole,
       module: moduleName,
     });
 
-    // ❌ No permission
+    // ❌ If no permission found
     if (!permission) {
-      return res.status(404).json({
-        success: false,
-        message: "Permission not found",
+      return res.status(200).json({
+        success: true,
+        data: {
+          create: false,
+          read: false,
+          update: false,
+          delete: false,
+        },
       });
     }
 
-    // ✅ Send only needed data
+    // ✅ Return DB permission
     return res.status(200).json({
       success: true,
-
       data: {
         create: permission.create,
         read: permission.read,
@@ -138,15 +161,12 @@ exports.getSinglePermission = async (req, res) => {
     });
 
   } catch (error) {
-
     return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
-
 
 
 

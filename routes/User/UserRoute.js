@@ -1,9 +1,32 @@
-const router = require("express").Router();
-const auth = require("../../middleware/authMiddleware");
-const checkPermission = require("../../middleware/permissionMiddleware");
-const { getUsers, deleteUser } = require("../../controllers/User/UserController");
+const express = require("express");
+const router = express.Router();
 
-router.get("/",auth, checkPermission("read"), getUsers);
-router.delete("/:id",auth,  checkPermission("delete"), deleteUser);
+const { getUsers, deleteUser, getChatUsers } = require("../../controllers/User/UserController");
+
+
+const { protect } = require("../../middleware/adminMiddleware");
+const checkPermission = require("../../middleware/permissionMiddleware");
+
+
+// ================= GET ALL USERS =================
+router.get(
+  "/",
+  protect,
+  checkPermission("User Control", "read"),
+  getUsers
+);
+
+// ================= DELETE USER =================
+router.delete(
+  "/:id",
+  protect,
+  checkPermission("User Control", "delete"),
+  deleteUser
+);
+
+
+// CHAT USERS (for messaging system) 
+router.get("/chat-users",
+  getChatUsers);
 
 module.exports = router;

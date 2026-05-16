@@ -4,7 +4,10 @@ const { google } = require("googleapis");
 const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { sendMail } = require("../middleware/sendMail");
+const {
+  sendMail,
+  emailTemplate,
+} = require("../middleware/sendMail");
 
 const jwtSecret = process.env.TOKEN_SECRET;
 
@@ -509,13 +512,14 @@ exports.googleAuth = async (req, res) => {
         image: picture || null, // ✅ IMAGE SAVE
         role: defaultRole._id,
       });
-    } else {
-      // ✅ If user exists but image not set, update from Google
-      if (!user.image) {
-        user.image = picture || null;
-        await user.save();
-      }
-    }
+  } else {
+  // ✅ ALWAYS UPDATE GOOGLE IMAGE
+  user.fullname = name || user.fullname;
+
+  user.image = picture || user.image || null;
+
+  await user.save();
+}
 
     const token = generateToken(user);
 

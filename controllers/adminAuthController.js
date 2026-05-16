@@ -553,7 +553,6 @@ exports.getUserById = async (req, res) => {
 };
 
 
-
 // =================================================
 // ================= DELETE =========================
 // =================================================
@@ -595,6 +594,7 @@ exports.deleteMultipleUsers = async (req, res) => {
 exports.deleteAllUsers = async (req, res) => {
   try {
     const result = await User.deleteMany({});
+
 
     res.status(200).json({
       message: "All users deleted successfully",

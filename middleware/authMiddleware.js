@@ -5,7 +5,6 @@ const User = require("../models/authModel");
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.header("Authorization");
 
-  console.log("Postman theke pawa Header:", authHeader);
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
@@ -18,11 +17,9 @@ const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    console.log("Decoded Token Data:", decoded);
 
     // Ekhon await kaj korbe karon upore async ache
     const user = await User.findById(decoded.id).populate("role");
-    console.log("User with Role:", user?.role?.name);
 
     if (!user) {
       return res.status(401).json({ success: false, message: "User not found." });
