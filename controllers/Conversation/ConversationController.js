@@ -92,10 +92,19 @@ exports.createConversation = async (req, res) => {
                     null,
             });
 
+        // ✅ IMPORTANT FIX
+        const populatedConversation =
+            await Conversation.findById(
+                savedConversation._id
+            ).populate(
+                "participants",
+                "fullname email image"
+            );
+
         res.status(201).json({
             success: true,
             conversation:
-                savedConversation,
+                populatedConversation,
         });
     } catch (error) {
         res.status(500).json({
