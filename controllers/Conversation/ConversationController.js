@@ -24,14 +24,31 @@ exports.createConversation = async (req, res) => {
         }
 
         // ✅ EXISTING CHECK
-        const existingConversation =
-            await Conversation.findOne({
-                participants: {
-                    $all: participants,
-                    $size:
-                        participants.length,
-                },
-            });
+        let existingConversation;
+
+        if (isGroup) {
+
+            existingConversation =
+                await Conversation.findOne({
+                    isGroup: true,
+                    friendlyName,
+                    participants: {
+                        $all: participants,
+                        $size: participants.length,
+                    },
+                });
+
+        } else {
+
+            existingConversation =
+                await Conversation.findOne({
+                    isGroup: false,
+                    participants: {
+                        $all: participants,
+                        $size: participants.length,
+                    },
+                });
+        }
 
         if (existingConversation) {
             return res.status(200).json({
