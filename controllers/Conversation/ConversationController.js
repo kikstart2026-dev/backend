@@ -142,12 +142,50 @@ exports.getUserConversations = async (req, res) => {
         const conversations = await Conversation.find({
             participants: userId,
         })
-            .populate("participants", "name email profileImage")
+            .populate(
+                "participants",
+                "fullname email image"
+            )
             .sort({ updatedAt: -1 });
+
+        // ✅ attach last message from twilio
+        const formattedConversations =
+            await Promise.all(
+                conversations.map(async (conv) => {
+                    try {
+                        const messages =
+                            await client.conversations.v1
+                                .services(SERVICE_SID)
+                                .conversations(
+                                    conv.twilioConversationSid
+                                )
+                                .messages.list({
+                                    limit: 1,
+                                    order: "desc",
+                                });
+
+                        const lastMessage =
+                            messages?.[0]?.body ||
+                            "No messages yet";
+
+                        return {
+                            ...conv.toObject(),
+                            lastMessage,
+                        };
+                    } catch (err) {
+                        return {
+                            ...conv.toObject(),
+                            lastMessage:
+                                "No messages yet",
+                        };
+                    }
+                })
+            );
 
         res.status(200).json({
             success: true,
-            conversations,
+            conversations:
+                formattedConversations,
         });
     } catch (error) {
         res.status(500).json({
@@ -183,43 +221,43 @@ exports.deleteConversation = async (req, res) => {
 };
 
 exports.generateToken = async (req, res) => {
-  try {
-    const { identity } = req.body;
+    try {
+        const { identity } = req.body;
 
-    if (!identity) {
-      return res.status(400).json({
-        success: false,
-        message: "identity is required",
-      });
+        if (!identity) {
+            return res.status(400).json({
+                success: false,
+                message: "identity is required",
+            });
+        }
+
+        const AccessToken = twilio.jwt.AccessToken;
+
+        const ChatGrant = AccessToken.ChatGrant;
+
+        const token = new AccessToken(
+            process.env.TWILIO_ACCOUNT_SID,
+            process.env.TWILIO_API_KEY,
+            process.env.TWILIO_API_SECRET,
+            {
+                identity,
+            }
+        );
+
+        const chatGrant = new ChatGrant({
+            serviceSid: SERVICE_SID,
+        });
+
+        token.addGrant(chatGrant);
+
+        res.status(200).json({
+            success: true,
+            token: token.toJwt(),
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
-
-    const AccessToken = twilio.jwt.AccessToken;
-
-    const ChatGrant = AccessToken.ChatGrant;
-
-    const token = new AccessToken(
-      process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_API_KEY,
-      process.env.TWILIO_API_SECRET,
-      {
-        identity,
-      }
-    );
-
-    const chatGrant = new ChatGrant({
-      serviceSid: SERVICE_SID,
-    });
-
-    token.addGrant(chatGrant);
-
-    res.status(200).json({
-      success: true,
-      token: token.toJwt(),
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
 };
