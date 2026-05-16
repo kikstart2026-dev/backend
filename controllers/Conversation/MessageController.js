@@ -1,21 +1,12 @@
 const { client, SERVICE_SID } = require("../../config/twilio");
-
 const Conversation = require("../../models/Conversation/Conversation");
 
+/* ================= SEND MESSAGE ================= */
 exports.sendMessage = async (req, res) => {
   try {
+    const { conversationSid, author, message } = req.body;
 
-    const {
-      conversationSid,
-      author,
-      message,
-    } = req.body;
-
-    if (
-      !conversationSid ||
-      !author ||
-      !message
-    ) {
+    if (!conversationSid || !author || !message) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
@@ -31,76 +22,79 @@ exports.sendMessage = async (req, res) => {
         body: message,
       });
 
-    // UPDATE LAST MESSAGE INFO
+    // UPDATE CONVERSATION (sidebar last message)
     await Conversation.findOneAndUpdate(
-      {
-        twilioConversationSid:
-          conversationSid,
-      },
+      { twilioConversationSid: conversationSid },
       {
         lastMessage: message,
-
-        lastMessageTime:
-          new Date(),
-
-        updatedAt:
-          new Date(),
-      }
+        lastMessageTime: new Date(),
+        updatedAt: new Date(),
+      },
+      { new: true }
     );
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
-      messageSid: msg.sid,
-      body: msg.body,
-      author: msg.author,
-      dateCreated: msg.dateCreated,
+      message: {
+        sid: msg.sid,
+        body: msg.body,
+        author: msg.author,
+        dateCreated: msg.dateCreated,
+      },
     });
 
   } catch (error) {
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
-
   }
 };
 
+/* ================= GET MESSAGES ================= */
 exports.getMessages = async (req, res) => {
   try {
-
     const { conversationSid } = req.params;
 
-    // UPDATE CONVERSATION TIME
+    if (!conversationSid) {
+      return res.status(400).json({
+        success: false,
+        message: "conversationSid required",
+      });
+    }
+
+    // UPDATE last active time
     await Conversation.findOneAndUpdate(
-      {
-        twilioConversationSid:
-          conversationSid,
-      },
-      {
-        updatedAt:
-          new Date(),
-      }
+      { twilioConversationSid: conversationSid },
+      { updatedAt: new Date() }
     );
 
+    // FETCH MESSAGES (FIXED ORDER)
     const messages = await client.conversations.v1
       .services(SERVICE_SID)
       .conversations(conversationSid)
       .messages.list({
         limit: 50,
+        order: "asc", // 🔥 CRITICAL FIX
       });
 
-    res.status(200).json({
+    // NORMALIZE RESPONSE (IMPORTANT FOR FRONTEND)
+    const formattedMessages = messages.map((m) => ({
+      sid: m.sid,
+      body: m.body,
+      author: m.author,
+      dateCreated: m.dateCreated,
+    }));
+
+    return res.status(200).json({
       success: true,
-      messages,
+      messages: formattedMessages,
     });
 
   } catch (error) {
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
-
   }
 };
