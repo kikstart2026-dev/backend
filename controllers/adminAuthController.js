@@ -86,9 +86,102 @@ exports.adminLogin = async (req, res) => {
       message: "OTP sent to admin email",
       email: user.email,
     });
-
+    
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+// =================================================
+// ================= ADMIN GOOGLE LOGIN 🔥 =========
+// =================================================
+exports.adminGoogleAuth = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        message: "Google code is required",
+      });
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const userRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      }
+    );
+
+    const { email, name, picture } = userRes.data;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Google email not found",
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
+      role: { $in: ["admin", "subadmin"] },  // ✅ correct
+    });
+
+    if (!user) {
+      return res.status(403).json({
+        message: "Access denied. Admin only ❌",
+      });
+    }
+
+    // optional image update
+    if (!user.image) {
+      user.image = picture || null;
+      await user.save();
+    }
+
+    const token = generateToken(user);
+
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    user.isVerified = true;
+    await user.save();
+
+    await sendMail(
+      user.email,
+      "Admin Login via Google",
+      emailTemplate(
+        "Admin Login Successful",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>You logged in via Google successfully.</p>`
+      )
+    );
+
+    res.status(200).json({
+      message: "Admin Google login successful",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        phone: user.phone,
+        location: user.location,
+        passcode: user.passcode,
+        image: user.image,
+        role: user.role,
+        dynamicRole: user.dynamicRole,
+      },
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
   }
 };
 
@@ -275,96 +368,11 @@ exports.adminResetPassword = async (req, res) => {
     res.status(200).json({
       message: "Password reset successful",
     });
-
+    
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
-
-// =================================================
-// ================= ADMIN GOOGLE LOGIN 🔥 =========
-// =================================================
-exports.adminGoogleAuth = async (req, res) => {
-  try {
-    const { code } = req.body;
-
-    if (!code) {
-      return res.status(400).json({
-        message: "Google code is required",
-      });
-    }
-
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
-
-    const userRes = await axios.get(
-      "https://www.googleapis.com/oauth2/v2/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
-      }
-    );
-
-    const { email, name, picture } = userRes.data;
-
-    if (!email) {
-      return res.status(400).json({
-        message: "Google email not found",
-      });
-    }
-
-    const user = await User.findOne({
-      email: email.trim().toLowerCase(),
-      role: { $in: ["admin", "subadmin"] },  // ✅ correct
-    });
-
-    if (!user) {
-      return res.status(403).json({
-        message: "Access denied. Admin only ❌",
-      });
-    }
-
-    // optional image update
-    if (!user.image) {
-      user.image = picture || null;
-      await user.save();
-    }
-
-    const token = generateToken(user);
-
-    await sendMail(
-      user.email,
-      "Admin Login via Google",
-      emailTemplate(
-        "Admin Login Successful",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You logged in via Google successfully.</p>`
-      )
-    );
-
-    res.status(200).json({
-      message: "Admin Google login successful",
-      token,
-      user: {
-        id: user._id,
-        fullname: user.fullname,
-        email: user.email,
-        role: user.role,
-        image: user.image || null,
-      },
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Google authentication failed",
-      error: error.message,
-    });
-  }
-};
-
 
 
 // =================================================
