@@ -509,6 +509,26 @@ exports.googleAuth = async (req, res) => {
         isVerified: true,
         image: picture || null, // ✅ IMAGE SAVE
       });
+
+      user.isVerified = true;
+      user.otp = undefined;
+      user.otpExpiry = undefined;
+
+      await user.save();
+
+      // ⭐ MAIL SEND SAFE CHECK
+    if (user.email) {
+      await sendMail(
+        user.email,
+        "🎉 Welcome to KikStart!",
+        emailTemplate(
+          "You're Officially In 🚀",
+          `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`,
+        ),
+      );
+    }
   } else {
   // ✅ ALWAYS UPDATE GOOGLE IMAGE
   user.fullname = name || user.fullname;
@@ -521,6 +541,12 @@ exports.googleAuth = async (req, res) => {
     const token = generateToken(user);
 
     const populatedUser = await user.populate("role");
+    
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+
+    await user.save();
 
     // ⭐ MAIL SEND SAFE CHECK
     if (user.email) {
