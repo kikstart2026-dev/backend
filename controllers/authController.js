@@ -509,6 +509,9 @@ exports.googleAuth = async (req, res) => {
         isVerified: true,
         image: picture || null, // ✅ IMAGE SAVE
       });
+      user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
   } else {
   // ✅ ALWAYS UPDATE GOOGLE IMAGE
   user.fullname = name || user.fullname;
@@ -535,6 +538,9 @@ exports.googleAuth = async (req, res) => {
         ),
       );
     }
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
 
     return res.status(200).json({
       message: "Google authentication successful",
