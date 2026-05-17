@@ -502,15 +502,12 @@ exports.googleAuth = async (req, res) => {
     });
 
     if (!user) {
-      const defaultRole = await Role.findOne({ name: "user" });
-
       user = await User.create({
         fullname: name,
         email: email.trim().toLowerCase(),
         password: "google-auth",
         isVerified: true,
         image: picture || null, // ✅ IMAGE SAVE
-        role: defaultRole._id,
       });
   } else {
   // ✅ ALWAYS UPDATE GOOGLE IMAGE
