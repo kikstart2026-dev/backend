@@ -51,6 +51,10 @@ const ConversationRouter = require("./routes/Conversation/ConversationRoute");
 
 const MessageRouter = require("./routes/Conversation/MessageRoute");
 
+
+
+
+
 require("dotenv").config();
 
 const app = express();
@@ -124,6 +128,8 @@ app.use("/api/v1/conversation", ConversationRouter);
 
 app.use("/api/v1/message", MessageRouter);
 
+app.use("/api/v1",paymentRoutes);
+
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
     message: "This is a protected route",
@@ -131,7 +137,5 @@ app.get("/api/v1", authMiddleware, (req, res) => {
   });
 });
 
-
-app.use('/api/v1/payment', paymentRoutes);
 
 module.exports = app;

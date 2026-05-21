@@ -74,7 +74,7 @@ exports.signUp = async (req, res) => {
       existingPhoneUser &&
       (!existingEmailUser ||
         existingPhoneUser._id.toString() !==
-          existingEmailUser._id.toString())
+        existingEmailUser._id.toString())
     ) {
       return res.status(400).json({
         message: "Phone number already used",
@@ -190,7 +190,10 @@ exports.otpVerify = async (req, res) => {
         email: user.email,
         role: user.role,
         dynamicRole: user.dynamicRole, // 🔥 important
-        image: user.image,
+        location: user.location || null,
+        phone: user.phone || null,
+        passcode: user.passcode || null,
+        image: user.image || null 
       },
     });
   } catch (error) {
@@ -517,31 +520,31 @@ exports.googleAuth = async (req, res) => {
       await user.save();
 
       // ⭐ MAIL SEND SAFE CHECK
-    if (user.email) {
-      await sendMail(
-        user.email,
-        "🎉 Welcome to KikStart!",
-        emailTemplate(
-          "You're Officially In 🚀",
-          `<p>Hey <b>${user.fullname}</b>,</p>
+      if (user.email) {
+        await sendMail(
+          user.email,
+          "🎉 Welcome to KikStart!",
+          emailTemplate(
+            "You're Officially In 🚀",
+            `<p>Hey <b>${user.fullname}</b>,</p>
            <p>Your Google account login successful.</p>
            <p>Welcome to KikStart 💙</p>`,
-        ),
-      );
+          ),
+        );
+      }
+    } else {
+      // ✅ ALWAYS UPDATE GOOGLE IMAGE
+      user.fullname = name || user.fullname;
+
+      user.image = picture || user.image || null;
+
+      await user.save();
     }
-  } else {
-  // ✅ ALWAYS UPDATE GOOGLE IMAGE
-  user.fullname = name || user.fullname;
-
-  user.image = picture || user.image || null;
-
-  await user.save();
-}
 
     const token = generateToken(user);
 
     const populatedUser = await user.populate("role");
-    
+
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
@@ -569,8 +572,11 @@ exports.googleAuth = async (req, res) => {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
-        role: populatedUser.role.name, 
-        image: user.image || null, // ✅ RETURN IMAGE
+        role: populatedUser.role.name,
+        location: user.location || null,
+        phone: user.phone || null,
+        passcode: user.passcode || null,
+        image: user.image || null,// ✅ RETURN IMAGE
       },
     });
   } catch (error) {
