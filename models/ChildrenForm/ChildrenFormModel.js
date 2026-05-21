@@ -8,6 +8,12 @@ const childrenSchema = new mongoose.Schema(
       trim: true,
     },
 
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     location: {
       type: String,
       required: true,

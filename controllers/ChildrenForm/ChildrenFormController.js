@@ -9,6 +9,7 @@ exports.createChild = async (req, res) => {
 
     const {
       fullName,
+      email,
       location,
       age,
       passCode,
@@ -25,7 +26,7 @@ exports.createChild = async (req, res) => {
       ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
       : "";
 
-    if (!fullName || !location || !age || !passCode) {
+    if (!fullName || !email || !location || !age || !passCode) {
       return res.status(400).json({
         success: false,
         message: "Required fields are missing",
@@ -34,6 +35,7 @@ exports.createChild = async (req, res) => {
 
     const newChild = await child.create({
       fullName,
+      email,
       location,
       age,
       passCode,
@@ -150,6 +152,7 @@ exports.updateChild = async (req, res) => {
 
     const {
       fullName,
+      email,
       age,
       location,
       foodHabit,
@@ -166,6 +169,7 @@ exports.updateChild = async (req, res) => {
 
     const updatedData = {
       fullName,
+      email,
       age,
       location,
       foodHabit,
