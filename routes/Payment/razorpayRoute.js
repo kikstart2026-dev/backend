@@ -6,7 +6,7 @@ const razorpayInstance =
   require("../../config/razorpay");
 
 const {
-  getAllPayments,
+  getAllPayments,deletePayment,
 } = require("../../controllers/Payment/razorpay");
 
 
@@ -67,6 +67,12 @@ router.post(
 router.get(
   "/all-payments",
   getAllPayments
+);
+
+
+router.delete(
+    "/delete-payment/:paymentId",
+    deletePayment
 );
 
 module.exports = router;

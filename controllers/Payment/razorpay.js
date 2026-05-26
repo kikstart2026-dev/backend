@@ -127,3 +127,73 @@ exports.getAllPayments = async (
         });
     }
 };
+
+
+// DELETE PAYMENT
+exports.deletePayment = async (
+    req,
+    res
+) => {
+
+    try {
+
+        const { paymentId } =
+            req.params;
+
+        // Razorpay does NOT support
+        // direct payment delete
+
+        // Instead refund payment
+
+        const payment =
+            await razorpayInstance.payments.fetch(
+                paymentId
+            );
+
+        // already refunded
+        if (
+            payment.status ===
+            "refunded"
+        ) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Payment already refunded",
+            });
+        }
+
+        // create full refund
+        const refund =
+            await razorpayInstance.payments.refund(
+                paymentId,
+                {
+                    amount:
+                        payment.amount,
+                }
+            );
+
+        res.status(200).json({
+            success: true,
+
+            message:
+                "Payment refunded successfully",
+
+            refund,
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            success: false,
+
+            message:
+                "Failed to delete/refund payment",
+
+            error:
+                error.message,
+        });
+    }
+};
