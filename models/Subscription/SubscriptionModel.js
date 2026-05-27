@@ -28,6 +28,12 @@ const subscriptionSchema =
       default: 1,
     },
 
+    planType: {
+      type: String,
+      enum: ["monthly", "onetime"],
+      required: true,
+    },
+
     durationDays: {
       type: Number,
       default: 30,
@@ -76,4 +82,4 @@ const subscriptionSchema =
     timestamps: true,
   });
 
-module.exports = mongoose.model( "Subscription", subscriptionSchema );
+module.exports = mongoose.model("Subscription", subscriptionSchema);
