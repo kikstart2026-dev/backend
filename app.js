@@ -52,6 +52,12 @@ const ConversationRouter = require("./routes/Conversation/ConversationRoute");
 const MessageRouter = require("./routes/Conversation/MessageRoute");
 
 
+//subscription
+const subscriptionRoutes = require( "./routes/Subscription/SubscriptionRoute");
+
+const subscriptionPaymentRoutes = require( "./routes/SubscriptionPayment/SubscriptionPaymentRoute" );
+
+
 
 
 
@@ -129,6 +135,11 @@ app.use("/api/v1/conversation", ConversationRouter);
 app.use("/api/v1/message", MessageRouter);
 
 app.use("/api/v1",paymentRoutes);
+
+//sunscription
+app.use( "/api/v1/subscription",subscriptionRoutes);
+
+app.use( "/api/v1/subscription-payment", subscriptionPaymentRoutes);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
