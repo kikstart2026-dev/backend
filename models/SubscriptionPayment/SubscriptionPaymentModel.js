@@ -1,67 +1,129 @@
-// ========================================
-// models/Payment.js
-// ========================================
-
-const mongoose = require("mongoose");
+const mongoose =
+  require("mongoose");
 
 const subscriptionPaymentSchema =
   new mongoose.Schema(
+
     {
-      fullname: String,
 
-      email: String,
+      fullname: {
+        type: String,
+        required: true,
+      },
 
-      phone: String,
+      email: {
+        type: String,
+        required: true,
+      },
+
+      phone: {
+        type: String,
+        required: true,
+      },
 
       subscriptionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Subscription",
+
+        type:
+          mongoose.Schema.Types.ObjectId,
+
+        ref:
+          "Subscription",
+
+        required: true,
+
       },
 
-      planName: String,
-
-      amount: Number,
-
-      // ================= NEW FIELDS =================
-
-      payment_id: String,
-
-      order_id: String,
-
-      currency: String,
-
-      status: {
+      planName: {
         type: String,
-        default: "captured",
+        required: true,
       },
 
-      method: String,
+      amount: {
+        type: Number,
+        required: true,
+      },
 
-      created_at: String,
+      // ================= RAZORPAY =================
 
-      fee: Number,
+      payment_id: {
+        type: String,
+        required: true,
+        unique: true,
+      },
 
-      tax: Number,
+      order_id: {
+        type: String,
+      },
 
-      refund_status: String,
+      currency: {
+        type: String,
+        default: "INR",
+      },
 
-      description: String,
+     status: {
+  type: String,
+  default: "captured",
+},
+
+      method: {
+        type: String,
+      },
+
+      contact: {
+        type: String,
+      },
+
+      created_at: {
+        type: String,
+      },
+
+      fee: {
+        type: Number,
+        default: 0,
+      },
+
+      tax: {
+        type: Number,
+        default: 0,
+      },
+
+      refund_status: {
+        type: String,
+        default: null,
+      },
+
+      description: {
+        type: String,
+      },
 
       // ================= DATE =================
 
       paymentDate: {
+
         type: Date,
-        default: Date.now,
+
+        default:
+          Date.now,
+
       },
 
-      expireDate: Date,
+      expireDate: {
+        type: Date,
+      },
+
     },
+
     {
       timestamps: true,
     }
+
   );
 
-module.exports = mongoose.model(
-  "SubscriptionPayment",
-  subscriptionPaymentSchema
-);
+module.exports =
+  mongoose.model(
+
+    "SubscriptionPayment",
+
+    subscriptionPaymentSchema
+
+  );
