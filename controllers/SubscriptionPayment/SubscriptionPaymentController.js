@@ -1,8 +1,13 @@
-const razorpayInstance = require("../../config/razorpay");
+const razorpayInstance =
+  require("../../config/razorpay");
 
-const Subscription = require("../../models/Subscription/SubscriptionModel");
+const Subscription =
+  require("../../models/Subscription/SubscriptionModel");
+  console.log("Subscription =>", Subscription);
 
-const UserSubscription = require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
+
+const UserSubscription =
+  require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
 
 
 // ========================================
@@ -15,86 +20,16 @@ exports.getAllPayments =
     try {
 
       const payments =
-        await razorpayInstance.payments.all({
+        await UserSubscription.find()
 
-          count: 100,
+          .populate("subscriptionId")
 
-        });
-
-      const formattedPayments =
-        payments.items.map((pay) => {
-
-          let finalAmount =
-            pay.amount;
-
-          if (
-            [
-              "INR",
-              "USD",
-              "EUR",
-              "GBP",
-            ].includes(pay.currency)
-          ) {
-
-            finalAmount =
-              pay.amount / 100;
-          }
-
-          return {
-
-            payment_id:
-              pay.id,
-
-            order_id:
-              pay.order_id,
-
-            amount:
-              finalAmount,
-
-            currency:
-              pay.currency,
-
-            status:
-              pay.status,
-
-            method:
-              pay.method,
-
-            fullname:
-              pay.notes?.fullname,
-
-            email:
-              pay.notes?.email,
-
-            contact:
-              pay.contact,
-
-            created_at:
-              new Date(
-                pay.created_at * 1000
-              ).toLocaleString(),
-
-            fee:
-              pay.fee
-                ? pay.fee / 100
-                : 0,
-
-            tax:
-              pay.tax
-                ? pay.tax / 100
-                : 0,
-
-            refund_status:
-              pay.refund_status,
-
-            description:
-              pay.description,
-
-          };
-        });
+          .sort({
+            createdAt: -1,
+          });
 
       const totalAmount =
-        formattedPayments.reduce(
+        payments.reduce(
 
           (acc, item) =>
             acc + item.amount,
@@ -108,12 +43,11 @@ exports.getAllPayments =
         success: true,
 
         totalPayments:
-          formattedPayments.length,
+          payments.length,
 
         totalAmount,
 
-        payments:
-          formattedPayments,
+        payments,
 
       });
 
@@ -148,16 +82,23 @@ exports.saveSubscription =
       const {
 
         fullname,
-
         email,
-
         phone,
-
         subscriptionId,
 
-        razorpay_payment_id,
+        // ================= PAYMENT DETAILS =================
 
-        razorpay_order_id,
+        payment_id,
+        order_id,
+        currency,
+        status,
+        method,
+        contact,
+        created_at,
+        fee,
+        tax,
+        refund_status,
+        description,
 
       } = req.body;
 
@@ -198,7 +139,7 @@ exports.saveSubscription =
 
       );
 
-      // ================= SAVE =================
+      // ================= SAVE SUBSCRIPTION =================
 
       const subscription =
         await UserSubscription.create({
@@ -211,19 +152,41 @@ exports.saveSubscription =
 
           subscriptionId,
 
-          razorpay_payment_id,
-
-          razorpay_order_id,
+          planName:
+            plan.planName,
 
           amount:
             plan.amount,
 
+          // ================= NEW FIELDS =================
+
+          payment_id,
+
+          order_id,
+
+          currency,
+
+          status,
+
+          method,
+
+          contact,
+
+          created_at,
+
+          fee,
+
+          tax,
+
+          refund_status,
+
+          description,
+
+          // ================= DATE =================
+
           paymentDate,
 
           expireDate,
-
-          status:
-            "active",
 
         });
 
@@ -271,7 +234,7 @@ exports.getUserActivePlan =
 
           email,
 
-          status: "active",
+          status: "captured",
 
         })
 
@@ -353,7 +316,7 @@ exports.getUserActivePlan =
 
 
 // ========================================
-// REFUND PAYMENT
+// REFUND / DELETE PAYMENT
 // ========================================
 
 exports.deletePayment =
@@ -365,45 +328,32 @@ exports.deletePayment =
         req.params;
 
       const payment =
-        await razorpayInstance.payments.fetch(
+        await UserSubscription.findById(
           paymentId
         );
 
-      if (
-        payment.status ===
-        "refunded"
-      ) {
+      if (!payment) {
 
-        return res.status(400).json({
+        return res.status(404).json({
 
           success: false,
 
           message:
-            "Payment already refunded",
+            "Payment not found",
 
         });
       }
 
-      const refund =
-        await razorpayInstance.payments.refund(
-
-          paymentId,
-
-          {
-            amount:
-              payment.amount,
-          }
-
-        );
+      await UserSubscription.findByIdAndDelete(
+        paymentId
+      );
 
       res.status(200).json({
 
         success: true,
 
         message:
-          "Payment refunded successfully",
-
-        refund,
+          "Payment deleted successfully",
 
       });
 
@@ -416,7 +366,7 @@ exports.deletePayment =
         success: false,
 
         message:
-          "Refund failed",
+          "Delete failed",
 
         error:
           error.message,

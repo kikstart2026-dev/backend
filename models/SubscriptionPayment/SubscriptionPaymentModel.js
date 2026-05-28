@@ -5,47 +5,63 @@
 const mongoose = require("mongoose");
 
 const subscriptionPaymentSchema =
-  new mongoose.Schema({
+  new mongoose.Schema(
+    {
+      fullname: String,
 
-    fullname: String,
+      email: String,
 
-    email: String,
+      phone: String,
 
-    phone: String,
+      subscriptionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Subscription",
+      },
 
-    subscriptionId: {
+      planName: String,
 
-      type:
-        mongoose.Schema.Types.ObjectId,
+      amount: Number,
 
-      ref: "Subscription",
+      // ================= NEW FIELDS =================
 
+      payment_id: String,
+
+      order_id: String,
+
+      currency: String,
+
+      status: {
+        type: String,
+        default: "captured",
+      },
+
+      method: String,
+
+      created_at: String,
+
+      fee: Number,
+
+      tax: Number,
+
+      refund_status: String,
+
+      description: String,
+
+      // ================= DATE =================
+
+      paymentDate: {
+        type: Date,
+        default: Date.now,
+      },
+
+      expireDate: Date,
     },
+    {
+      timestamps: true,
+    }
+  );
 
-    planName: String,
-
-    amount: Number,
-
-    paymentDate: {
-
-      type: Date,
-
-      default: Date.now,
-
-    },
-
-    expireDate: Date,
-
-    status: {
-
-      type: String,
-
-      default: "captured",
-
-    },
-
-  }, {
-    timestamps: true,
-  });
-
-module.exports = mongoose.model( "SubscriptionPayment", subscriptionPaymentSchema );
+module.exports = mongoose.model(
+  "SubscriptionPayment",
+  subscriptionPaymentSchema
+);
