@@ -205,21 +205,19 @@ exports.saveSubscription =
 
             // ================= PAYMENT DATE =================
 
-            const paymentDate =
-                new Date();
+            const paymentDate = new Date();
 
-            // ================= EXPIRE DATE =================
+            const durationDays = parseInt(plan.durationDays || 0);
 
-            const expireDate =
-                new Date(paymentDate);
+            if (durationDays <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid plan duration",
+                });
+            }
 
-            expireDate.setDate(
-
-                expireDate.getDate() +
-
-                plan.durationDays
-
-            );
+            const expireDate = new Date(paymentDate);
+            expireDate.setDate(expireDate.getDate() + durationDays);
 
             // ================= SAVE SUBSCRIPTION =================
 
@@ -260,22 +258,11 @@ exports.saveSubscription =
                     contact:
                         razorpayPayment.contact,
 
-                    created_at:
-                        new Date(
+                    created_at: new Date(razorpayPayment.created_at * 1000),
 
-                            razorpayPayment.created_at * 1000
-
-                        )
-
-                            .toISOString()
-
-                            .split("T")[0],
-
-                    fee:
-                        razorpayPayment.fee,
-
-                    tax:
-                        razorpayPayment.tax,
+                    fee: razorpayPayment.fee ? razorpayPayment.fee / 100 : 0,
+                    
+                    tax: razorpayPayment.tax ? razorpayPayment.tax / 100 : 0,
 
                     refund_status:
                         razorpayPayment.refund_status,
