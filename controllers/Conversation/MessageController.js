@@ -2,23 +2,16 @@ const { client, SERVICE_SID } = require("../../config/twilio");
 
 exports.sendMessage = async (req, res) => {
   try {
-    const {
-      conversationSid,
-      author,
-      message,
-    } = req.body;
+    const { conversationSid, author, message } = req.body;
 
-    if (
-      !conversationSid ||
-      !author ||
-      !message
-    ) {
+    if (!conversationSid || !author || !message) {
       return res.status(400).json({
         success: false,
         message: "All fields are required",
       });
     }
 
+    // ১. Twilio-তে নতুন মেসেজটি তৈরি করুন
     const msg = await client.conversations.v1
       .services(SERVICE_SID)
       .conversations(conversationSid)
@@ -27,6 +20,35 @@ exports.sendMessage = async (req, res) => {
         body: message,
       });
 
+    try {
+      // ২. 🔥 যে মেসেজটি পাঠিয়েছে (author), তার নিজের জন্য এই মেসেজটি Read Mark করে দিন
+      // এর ফলে প্রেরকের অ্যাকাউন্টে এই মাত্র পাঠানো মেসেজটি 'unread' হিসেবে কাউন্ট হবে না।
+      if (msg && msg.index !== undefined) {
+        const participants = await client.conversations.v1
+          .services(SERVICE_SID)
+          .conversations(conversationSid)
+          .participants.list();
+
+        const currentParticipant = participants.find(
+          (p) => p.identity === author
+        );
+
+        if (currentParticipant) {
+          await client.conversations.v1
+            .services(SERVICE_SID)
+            .conversations(conversationSid)
+            .participants(currentParticipant.sid)
+            .update({
+              lastReadMessageIndex: msg.index, // নতুন মেসেজের সঠিক Index সেট করা হলো
+            });
+        }
+      }
+    } catch (syncError) {
+      // সিঙ্ক এরর হলে কনসোলে লগ রাখুন, যাতে মেসেজ পাঠানোতে কোনো বাধা না আসে
+      console.error("Failed to sync lastReadMessageIndex for sender:", syncError.message);
+    }
+
+    // ৩. সফল রেসপন্স রিটার্ন করুন
     res.status(201).json({
       success: true,
       messageSid: msg.sid,
@@ -41,6 +63,8 @@ exports.sendMessage = async (req, res) => {
     });
   }
 };
+
+
 exports.getMessages = async (req, res) => {
   try {
     const { conversationSid } = req.params;
