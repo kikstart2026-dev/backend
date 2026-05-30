@@ -463,3 +463,40 @@ exports.deletePayment =
             });
         }
     };
+
+
+exports.getMyPayments = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const payments =
+      await UserSubscription.find({
+        email,
+      })
+        .populate("subscriptionId")
+        .sort({
+          createdAt: -1,
+        });
+
+    const totalAmount =
+      payments.reduce(
+        (acc, item) =>
+          acc + item.amount,
+        0
+      );
+
+    res.status(200).json({
+      success: true,
+      totalPayments:
+        payments.length,
+      totalAmount,
+      payments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error.message,
+    });
+  }
+};

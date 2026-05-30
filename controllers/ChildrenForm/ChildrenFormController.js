@@ -321,3 +321,25 @@ exports.deleteAllChild = async (req, res) => {
 
   }
 };
+
+
+exports.getMyChildren = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const children = await child.find({
+      email,
+    });
+
+    res.status(200).json({
+      success: true,
+      results: children.length,
+      data: children,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

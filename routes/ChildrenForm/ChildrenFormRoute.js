@@ -11,6 +11,11 @@ router.get("/getAllChild",childController.getAllChild);
 
 router.get("/getChildById/:id",childController.getChildById);
 
+router.get(
+  "/my-children/:email",
+  childController.getMyChildren
+);
+
 // router.put("/updateChild/:id",childController.updateChild);
 router.put(
   "/updateChild/:id",
