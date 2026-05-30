@@ -175,6 +175,7 @@ exports.getUserConversations = async (req, res) => {
             .sort({ updatedAt: -1 });
 
         // ✅ attach last message from twilio
+        
         const formattedConversations =
             await Promise.all(
                 conversations.map(async (conv) => {
@@ -194,15 +195,50 @@ exports.getUserConversations = async (req, res) => {
                             messages?.[0]?.body ||
                             "No messages yet";
 
+                        const participants =
+                            await client.conversations.v1
+                                .services(SERVICE_SID)
+                                .conversations(
+                                    conv.twilioConversationSid
+                                )
+                                .participants.list();
+
+                        const currentParticipant =
+                            participants.find(
+                                (p) =>
+                                    p.identity === userId
+                            );
+
+                        const conversationInfo =
+                            await client.conversations.v1
+                                .services(SERVICE_SID)
+                                .conversations(
+                                    conv.twilioConversationSid
+                                )
+                                .fetch();
+
+                        const unreadCount =
+                            Math.max(
+                                0,
+                                (conversationInfo.messagesCount ||
+                                    0) -
+                                (
+                                    (currentParticipant?.lastReadMessageIndex ??
+                                        -1) + 1
+                                )
+                            );
+
                         return {
                             ...conv.toObject(),
                             lastMessage,
+                            unreadCount,
                         };
                     } catch (err) {
                         return {
                             ...conv.toObject(),
                             lastMessage:
                                 "No messages yet",
+                            unreadCount: 0,
                         };
                     }
                 })
