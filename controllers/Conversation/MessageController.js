@@ -75,7 +75,7 @@ exports.getMessages = async (req, res) => {
 
 exports.markAsRead = async (req, res) => {
   try {
-    const { conversationSid, identity } = req.body;
+    const { conversationSid, identity, lastReadMessageIndex } = req.body; // 💡 lastReadMessageIndex নিন
 
     if (!conversationSid || !identity) {
       return res.status(400).json({
@@ -89,10 +89,7 @@ exports.markAsRead = async (req, res) => {
       .conversations(conversationSid);
 
     const participants = await conversation.participants.list();
-
-    const participant = participants.find(
-      (p) => p.identity === identity
-    );
+    const participant = participants.find((p) => p.identity === identity);
 
     if (!participant) {
       return res.status(404).json({
@@ -101,10 +98,21 @@ exports.markAsRead = async (req, res) => {
       });
     }
 
+    // 💡 যদি ফ্রন্টএন্ড থেকে index না আসে, তবে conversation-এর শেষ মেসেজের index বের করে নিন
+    let targetIndex = lastReadMessageIndex;
+    if (targetIndex === undefined || targetIndex === null) {
+      const messages = await conversation.messages.list({ limit: 1 });
+      if (messages.length > 0) {
+        targetIndex = messages[0].index;
+      } else {
+        targetIndex = 0;
+      }
+    }
+
     await conversation
       .participants(participant.sid)
       .update({
-        lastReadMessageIndex: null,
+        lastReadMessageIndex: targetIndex, // ⚡ সঠিক মেসেজ ইনডেক্স সেট করা হলো
       });
 
     res.status(200).json({
