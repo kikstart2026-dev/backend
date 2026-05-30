@@ -11,7 +11,7 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
-    // ১. Twilio-তে নতুন মেসেজটি তৈরি করুন
+    // ১. Twilio-তে নতুন মেসেজ তৈরি
     const msg = await client.conversations.v1
       .services(SERVICE_SID)
       .conversations(conversationSid)
@@ -20,18 +20,15 @@ exports.sendMessage = async (req, res) => {
         body: message,
       });
 
+    // ২. প্রেরকের জন্য মেসেজটি অটোমেটিকভাবে 'Read' হিসেবে মার্ক করা
     try {
-      // ২. 🔥 যে মেসেজটি পাঠিয়েছে (author), তার নিজের জন্য এই মেসেজটি Read Mark করে দিন
-      // এর ফলে প্রেরকের অ্যাকাউন্টে এই মাত্র পাঠানো মেসেজটি 'unread' হিসেবে কাউন্ট হবে না।
-      if (msg && msg.index !== undefined) {
+      if (msg && typeof msg.index === "number") {
         const participants = await client.conversations.v1
           .services(SERVICE_SID)
           .conversations(conversationSid)
           .participants.list();
 
-        const currentParticipant = participants.find(
-          (p) => p.identity === author
-        );
+        const currentParticipant = participants.find((p) => p.identity === author);
 
         if (currentParticipant) {
           await client.conversations.v1
@@ -39,17 +36,16 @@ exports.sendMessage = async (req, res) => {
             .conversations(conversationSid)
             .participants(currentParticipant.sid)
             .update({
-              lastReadMessageIndex: msg.index, // নতুন মেসেজের সঠিক Index সেট করা হলো
+              lastReadMessageIndex: msg.index,
             });
         }
       }
     } catch (syncError) {
-      // সিঙ্ক এরর হলে কনসোলে লগ রাখুন, যাতে মেসেজ পাঠানোতে কোনো বাধা না আসে
       console.error("Failed to sync lastReadMessageIndex for sender:", syncError.message);
     }
 
-    // ৩. সফল রেসপন্স রিটার্ন করুন
-    res.status(201).json({
+    // ৩. সফল রেসপন্স
+    return res.status(201).json({
       success: true,
       messageSid: msg.sid,
       body: msg.body,
@@ -57,13 +53,12 @@ exports.sendMessage = async (req, res) => {
       dateCreated: msg.dateCreated,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
   }
 };
-
 
 exports.getMessages = async (req, res) => {
   try {
@@ -80,26 +75,24 @@ exports.getMessages = async (req, res) => {
       .services(SERVICE_SID)
       .conversations(conversationSid)
       .messages.list({
-        limit: 50,
+        limit: 50, // প্রোডাকশনে এখানে পেজিনেশন চালু করা ভালো
       });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       messages,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
   }
 };
 
-
-
 exports.markAsRead = async (req, res) => {
   try {
-    const { conversationSid, identity, lastReadMessageIndex } = req.body; // 💡 lastReadMessageIndex নিন
+    const { conversationSid, identity, lastReadMessageIndex } = req.body;
 
     if (!conversationSid || !identity) {
       return res.status(400).json({
@@ -108,7 +101,7 @@ exports.markAsRead = async (req, res) => {
       });
     }
 
-    const conversation = await client.conversations.v1
+    const conversation = client.conversations.v1
       .services(SERVICE_SID)
       .conversations(conversationSid);
 
@@ -122,29 +115,24 @@ exports.markAsRead = async (req, res) => {
       });
     }
 
-    // 💡 যদি ফ্রন্টএন্ড থেকে index না আসে, তবে conversation-এর শেষ মেসেজের index বের করে নিন
     let targetIndex = lastReadMessageIndex;
+    
+    // যদি ফ্রন্টএন্ড ইডেক্স না পাঠায়, তবে চ্যাটের সর্বশেষ মেসেজের ইডেক্স খুঁজে বের করবে
     if (targetIndex === undefined || targetIndex === null) {
       const messages = await conversation.messages.list({ limit: 1 });
-      if (messages.length > 0) {
-        targetIndex = messages[0].index;
-      } else {
-        targetIndex = 0;
-      }
+      targetIndex = messages.length > 0 ? messages[0].index : 0;
     }
 
-    await conversation
-      .participants(participant.sid)
-      .update({
-        lastReadMessageIndex: targetIndex, // ⚡ সঠিক মেসেজ ইনডেক্স সেট করা হলো
-      });
+    await conversation.participants(participant.sid).update({
+      lastReadMessageIndex: Number(targetIndex),
+    });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Marked as read",
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
