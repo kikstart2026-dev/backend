@@ -14,4 +14,5 @@ router.get(
   controller.getMessages
 );
 
+router.post("/mark-seen", controller.markMessagesAsSeen);
 module.exports = router;
