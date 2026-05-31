@@ -1,8 +1,11 @@
-const razorpayInstance = require("../../config/razorpay");
+const razorpayInstance =
+    require("../../config/razorpay");
 
-const Subscription = require("../../models/Subscription/SubscriptionModel");
+const Subscription =
+    require("../../models/Subscription/SubscriptionModel");
 
-const UserSubscription = require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
+const UserSubscription =
+    require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
 
 
 // ========================================
@@ -10,130 +13,59 @@ const UserSubscription = require("../../models/SubscriptionPayment/SubscriptionP
 // ========================================
 
 exports.getAllPayments =
-  async (req, res) => {
+    async (req, res) => {
 
-    try {
+        try {
 
-      const payments =
-        await razorpayInstance.payments.all({
+            const payments =
+                await UserSubscription.find()
 
-          count: 100,
+                    .populate("subscriptionId")
 
-        });
+                    .sort({
+                        createdAt: -1,
+                    });
 
-      const formattedPayments =
-        payments.items.map((pay) => {
+            const totalAmount =
+                payments.reduce(
 
-          let finalAmount =
-            pay.amount;
+                    (acc, item) =>
+                        acc + item.amount,
 
-          if (
-            [
-              "INR",
-              "USD",
-              "EUR",
-              "GBP",
-            ].includes(pay.currency)
-          ) {
+                    0
 
-            finalAmount =
-              pay.amount / 100;
-          }
+                );
 
-          return {
+            res.status(200).json({
 
-            payment_id:
-              pay.id,
+                success: true,
 
-            order_id:
-              pay.order_id,
+                totalPayments:
+                    payments.length,
 
-            amount:
-              finalAmount,
+                totalAmount,
 
-            currency:
-              pay.currency,
+                payments,
 
-            status:
-              pay.status,
+            });
 
-            method:
-              pay.method,
+        } catch (error) {
 
-            fullname:
-              pay.notes?.fullname,
+            console.log(error);
 
-            email:
-              pay.notes?.email,
+            res.status(500).json({
 
-            contact:
-              pay.contact,
+                success: false,
 
-            created_at:
-              new Date(
-                pay.created_at * 1000
-              ).toLocaleString(),
+                message:
+                    "Failed to fetch payments",
 
-            fee:
-              pay.fee
-                ? pay.fee / 100
-                : 0,
+                error:
+                    error.message,
 
-            tax:
-              pay.tax
-                ? pay.tax / 100
-                : 0,
-
-            refund_status:
-              pay.refund_status,
-
-            description:
-              pay.description,
-
-          };
-        });
-
-      const totalAmount =
-        formattedPayments.reduce(
-
-          (acc, item) =>
-            acc + item.amount,
-
-          0
-
-        );
-
-      res.status(200).json({
-
-        success: true,
-
-        totalPayments:
-          formattedPayments.length,
-
-        totalAmount,
-
-        payments:
-          formattedPayments,
-
-      });
-
-    } catch (error) {
-
-      console.log(error);
-
-      res.status(500).json({
-
-        success: false,
-
-        message:
-          "Failed to fetch payments",
-
-        error:
-          error.message,
-
-      });
-    }
-  };
+            });
+        }
+    };
 
 
 // ========================================
@@ -141,117 +73,236 @@ exports.getAllPayments =
 // ========================================
 
 exports.saveSubscription =
-  async (req, res) => {
+    async (req, res) => {
 
-    try {
+        try {
 
-      const {
+            const {
 
-        fullname,
+                fullname,
+                email,
+                phone,
+                subscriptionId,
+                payment_id,
 
-        email,
+            } = req.body;
 
-        phone,
+            // ================= VALIDATION =================
 
-        subscriptionId,
+            if (
+                !fullname ||
+                !email ||
+                !phone ||
+                !subscriptionId ||
+                !payment_id
+            ) {
 
-        razorpay_payment_id,
+                return res.status(400).json({
 
-        razorpay_order_id,
+                    success: false,
 
-      } = req.body;
+                    message:
+                        "All fields are required",
 
-      // ================= FIND PLAN =================
+                });
+            }
 
-      const plan =
-        await Subscription.findById(
-          subscriptionId
-        );
+            // ================= FIND PLAN =================
 
-      if (!plan) {
+            const plan =
+                await Subscription.findById(
+                    subscriptionId
+                );
 
-        return res.status(404).json({
+            if (!plan) {
 
-          success: false,
+                return res.status(404).json({
 
-          message:
-            "Plan not found",
+                    success: false,
 
-        });
-      }
+                    message:
+                        "Plan not found",
 
-      // ================= PAYMENT DATE =================
+                });
+            }
 
-      const paymentDate =
-        new Date();
+            // ================= FETCH PAYMENT =================
 
-      // ================= EXPIRE DATE =================
+            let razorpayPayment =
 
-      const expireDate =
-        new Date(paymentDate);
+                await razorpayInstance
+                    .payments
+                    .fetch(
+                        payment_id
+                    );
 
-      expireDate.setDate(
+            // ================= AUTO CAPTURE =================
 
-        expireDate.getDate() +
+            if (
+                razorpayPayment.status ===
+                "authorized"
+            ) {
 
-        plan.durationDays
+                await razorpayInstance
+                    .payments
+                    .capture(
 
-      );
+                        payment_id,
 
-      // ================= SAVE =================
+                        razorpayPayment.amount
 
-      const subscription =
-        await UserSubscription.create({
+                    );
 
-          fullname,
+                // FETCH AGAIN AFTER CAPTURE
 
-          email,
+                razorpayPayment =
 
-          phone,
+                    await razorpayInstance
+                        .payments
+                        .fetch(
+                            payment_id
+                        );
+            }
 
-          subscriptionId,
+            // ================= PAYMENT STATUS CHECK =================
 
-          razorpay_payment_id,
+            if (
+                razorpayPayment.status !==
+                "captured"
+            ) {
 
-          razorpay_order_id,
+                return res.status(400).json({
 
-          amount:
-            plan.amount,
+                    success: false,
 
-          paymentDate,
+                    message:
+                        "Payment not captured",
 
-          expireDate,
+                });
+            }
 
-          status:
-            "active",
+            // ================= DUPLICATE CHECK =================
 
-        });
+            const alreadyExists =
+                await UserSubscription.findOne({
 
-      res.status(201).json({
+                    payment_id:
+                        razorpayPayment.id,
 
-        success: true,
+                });
 
-        message:
-          "Subscription activated successfully",
+            if (alreadyExists) {
 
-        subscription,
+                return res.status(400).json({
 
-      });
+                    success: false,
 
-    } catch (error) {
+                    message:
+                        "Payment already saved",
 
-      console.log(error);
+                });
+            }
 
-      res.status(500).json({
+            // ================= PAYMENT DATE =================
 
-        success: false,
+            const paymentDate = new Date();
 
-        message:
-          error.message,
+            const durationDays = parseInt(plan.durationDays || 0);
 
-      });
-    }
-  };
+            if (durationDays <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid plan duration",
+                });
+            }
+
+            const expireDate = new Date(paymentDate);
+            expireDate.setDate(expireDate.getDate() + durationDays);
+
+            // ================= SAVE SUBSCRIPTION =================
+
+            const subscription =
+                await UserSubscription.create({
+
+                    fullname,
+
+                    email,
+
+                    phone,
+
+                    subscriptionId,
+
+                    planName:
+                        plan.planName,
+
+                    amount:
+                        plan.amount,
+
+                    // ================= RAZORPAY DETAILS =================
+
+                    payment_id:
+                        razorpayPayment.id,
+
+                    order_id:
+                        razorpayPayment.order_id,
+
+                    currency:
+                        razorpayPayment.currency,
+
+                    status:
+                        razorpayPayment.status,
+
+                    method:
+                        razorpayPayment.method,
+
+                    contact:
+                        razorpayPayment.contact,
+
+                    created_at: new Date(razorpayPayment.created_at * 1000),
+
+                    fee: razorpayPayment.fee ? razorpayPayment.fee / 100 : 0,
+                    
+                    tax: razorpayPayment.tax ? razorpayPayment.tax / 100 : 0,
+
+                    refund_status:
+                        razorpayPayment.refund_status,
+
+                    description:
+                        razorpayPayment.description,
+
+                    // ================= DATE =================
+
+                    paymentDate,
+
+                    expireDate,
+
+                });
+
+            res.status(201).json({
+
+                success: true,
+
+                message:
+                    "Subscription activated successfully",
+
+                subscription,
+
+            });
+
+        } catch (error) {
+
+            console.log(error);
+
+            res.status(500).json({
+
+                success: false,
+
+                message:
+                    error.message,
+
+            });
+        }
+    };
 
 
 // ========================================
@@ -259,168 +310,193 @@ exports.saveSubscription =
 // ========================================
 
 exports.getUserActivePlan =
-  async (req, res) => {
+    async (req, res) => {
 
-    try {
+        try {
 
-      const { email } =
-        req.params;
+            const { email } =
+                req.params;
 
-      const activePlan =
-        await UserSubscription.findOne({
+            const activePlan =
+                await UserSubscription.findOne({
 
-          email,
+                    email,
 
-          status: "active",
+                    status:
+                        "captured",
 
-        })
+                })
 
-          .sort({
-            createdAt: -1,
-          })
+                    .sort({
+                        createdAt: -1,
+                    })
 
-          .populate(
-            "subscriptionId"
-          );
+                    .populate(
+                        "subscriptionId"
+                    );
 
-      if (!activePlan) {
+            if (!activePlan) {
 
-        return res.status(404).json({
+                return res.status(404).json({
 
-          success: false,
+                    success: false,
 
-          message:
-            "No active subscription found",
+                    message:
+                        "No active subscription found",
 
-        });
-      }
+                });
+            }
 
-      // ================= DAYS LEFT =================
+            // ================= DAYS LEFT =================
 
-      const today =
-        new Date();
+            const today =
+                new Date();
 
-      const expireDate =
-        new Date(
-          activePlan.expireDate
-        );
+            const expireDate =
+                new Date(
+                    activePlan.expireDate
+                );
 
-      const diffTime =
-        expireDate - today;
+            const diffTime =
+                expireDate - today;
 
-      const daysLeft =
-        Math.ceil(
+            const daysLeft =
+                Math.ceil(
 
-          diffTime /
+                    diffTime /
 
-          (
-            1000 *
-            60 *
-            60 *
-            24
-          )
+                    (
+                        1000 *
+                        60 *
+                        60 *
+                        24
+                    )
 
-        );
+                );
 
-      res.status(200).json({
+            res.status(200).json({
 
-        success: true,
+                success: true,
 
-        subscription:
-          activePlan,
+                subscription:
+                    activePlan,
 
-        daysLeft:
-          daysLeft > 0
-            ? daysLeft
-            : 0,
+                daysLeft:
+                    daysLeft > 0
+                        ? daysLeft
+                        : 0,
 
-      });
+            });
 
-    } catch (error) {
+        } catch (error) {
 
-      console.log(error);
+            console.log(error);
 
-      res.status(500).json({
+            res.status(500).json({
 
-        success: false,
+                success: false,
 
-        message:
-          error.message,
+                message:
+                    error.message,
 
-      });
-    }
-  };
+            });
+        }
+    };
 
 
 // ========================================
-// REFUND PAYMENT
+// DELETE PAYMENT
 // ========================================
 
 exports.deletePayment =
-  async (req, res) => {
+    async (req, res) => {
 
-    try {
+        try {
 
-      const { paymentId } =
-        req.params;
+            const { paymentId } =
+                req.params;
 
-      const payment =
-        await razorpayInstance.payments.fetch(
-          paymentId
-        );
+            const payment =
+                await UserSubscription.findById(
+                    paymentId
+                );
 
-      if (
-        payment.status ===
-        "refunded"
-      ) {
+            if (!payment) {
 
-        return res.status(400).json({
+                return res.status(404).json({
 
-          success: false,
+                    success: false,
 
-          message:
-            "Payment already refunded",
+                    message:
+                        "Payment not found",
 
+                });
+            }
+
+            await UserSubscription.findByIdAndDelete(
+                paymentId
+            );
+
+            res.status(200).json({
+
+                success: true,
+
+                message:
+                    "Payment deleted successfully",
+
+            });
+
+        } catch (error) {
+
+            console.log(error);
+
+            res.status(500).json({
+
+                success: false,
+
+                message:
+                    "Delete failed",
+
+                error:
+                    error.message,
+
+            });
+        }
+    };
+
+
+exports.getMyPayments = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const payments =
+      await UserSubscription.find({
+        email,
+      })
+        .populate("subscriptionId")
+        .sort({
+          createdAt: -1,
         });
-      }
 
-      const refund =
-        await razorpayInstance.payments.refund(
+    const totalAmount =
+      payments.reduce(
+        (acc, item) =>
+          acc + item.amount,
+        0
+      );
 
-          paymentId,
-
-          {
-            amount:
-              payment.amount,
-          }
-
-        );
-
-      res.status(200).json({
-
-        success: true,
-
-        message:
-          "Payment refunded successfully",
-
-        refund,
-
-      });
-
-    } catch (error) {
-
-      console.log(error);
-
-      res.status(500).json({
-
-        success: false,
-
-        message:
-          "Refund failed",
-
-        error:
-          error.message,
-
-      });
-    }
-  };
+    res.status(200).json({
+      success: true,
+      totalPayments:
+        payments.length,
+      totalAmount,
+      payments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message:
+        error.message,
+    });
+  }
+};

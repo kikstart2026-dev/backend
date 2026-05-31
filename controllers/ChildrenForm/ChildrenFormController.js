@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const child = require("../../models/ChildrenForm/ChildrenFormModel");
+const UserSubscription = require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
 const path = require("path");
 
 
@@ -19,12 +20,12 @@ exports.createChild = async (req, res) => {
       prolongDisease,
     } = req.body;
 
-    const path = require("path");
-
     // ✅ IMAGE PATH FROM MULTER
     const profileImage = req.file
       ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
       : "";
+
+    // ================= REQUIRED FIELD CHECK =================
 
     if (!fullName || !email || !location || !age || !passCode) {
       return res.status(400).json({
@@ -32,6 +33,59 @@ exports.createChild = async (req, res) => {
         message: "Required fields are missing",
       });
     }
+
+    // ================= ACTIVE SUBSCRIPTION CHECK =================
+
+    const activePlan = await UserSubscription.findOne({
+      email,
+      status: "captured",
+    })
+      .sort({
+        createdAt: -1,
+      })
+      .populate("subscriptionId");
+
+    if (!activePlan) {
+      return res.status(403).json({
+        success: false,
+        redirectToSubscription: true,
+        message: "No active subscription found",
+      });
+    }
+
+    // ================= SUBSCRIPTION EXPIRY CHECK =================
+
+    if (
+      activePlan.expireDate &&
+      new Date(activePlan.expireDate) < new Date()
+    ) {
+      return res.status(403).json({
+        success: false,
+        redirectToSubscription: true,
+        message: "Subscription expired. Please renew your plan.",
+      });
+    }
+
+    // ================= CHILD LIMIT CHECK =================
+
+    const totalChildren = await child.countDocuments({
+      email,
+    });
+
+    const allowedChildren =
+      activePlan.subscriptionId?.maxChildren || 0;
+
+    if (totalChildren >= allowedChildren) {
+      return res.status(403).json({
+        success: false,
+        limitReached: true,
+        maxChildren: allowedChildren,
+        currentChildren: totalChildren,
+        message: `Maximum ${allowedChildren} children allowed in your subscription plan`,
+      });
+    }
+
+    // ================= CREATE CHILD =================
 
     const newChild = await child.create({
       fullName,
@@ -50,6 +104,8 @@ exports.createChild = async (req, res) => {
       success: true,
       message: "Child profile created successfully",
       data: newChild,
+      remainingChildren:
+        allowedChildren - (totalChildren + 1),
     });
 
   } catch (error) {
@@ -263,5 +319,27 @@ exports.deleteAllChild = async (req, res) => {
       message: error.message,
     });
 
+  }
+};
+
+
+exports.getMyChildren = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const children = await child.find({
+      email,
+    });
+
+    res.status(200).json({
+      success: true,
+      results: children.length,
+      data: children,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

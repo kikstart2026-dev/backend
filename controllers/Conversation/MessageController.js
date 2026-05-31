@@ -11,6 +11,7 @@ exports.sendMessage = async (req, res) => {
       });
     }
 
+    // ১. Twilio-তে নতুন মেসেজ তৈরি
     const msg = await client.conversations.v1
       .services(SERVICE_SID)
       .conversations(conversationSid)
@@ -22,7 +23,32 @@ exports.sendMessage = async (req, res) => {
         }),
       });
 
-    res.status(201).json({
+    // ২. প্রেরকের জন্য মেসেজটি অটোমেটিকভাবে 'Read' হিসেবে মার্ক করা
+    try {
+      if (msg && typeof msg.index === "number") {
+        const participants = await client.conversations.v1
+          .services(SERVICE_SID)
+          .conversations(conversationSid)
+          .participants.list();
+
+        const currentParticipant = participants.find((p) => p.identity === author);
+
+        if (currentParticipant) {
+          await client.conversations.v1
+            .services(SERVICE_SID)
+            .conversations(conversationSid)
+            .participants(currentParticipant.sid)
+            .update({
+              lastReadMessageIndex: msg.index,
+            });
+        }
+      }
+    } catch (syncError) {
+      console.error("Failed to sync lastReadMessageIndex for sender:", syncError.message);
+    }
+
+    // ৩. সফল রেসপন্স
+    return res.status(201).json({
       success: true,
       messageSid: msg.sid,
       body: msg.body,
@@ -30,7 +56,7 @@ exports.sendMessage = async (req, res) => {
       dateCreated: msg.dateCreated,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: error.message,
     });
@@ -41,19 +67,75 @@ exports.getMessages = async (req, res) => {
   try {
     const { conversationSid } = req.params;
 
+    if (!conversationSid) {
+      return res.status(400).json({
+        success: false,
+        message: "conversationSid required",
+      });
+    }
+
     const messages = await client.conversations.v1
       .services(SERVICE_SID)
       .conversations(conversationSid)
       .messages.list({
-        limit: 50,
+        limit: 50, // প্রোডাকশনে এখানে পেজিনেশন চালু করা ভালো
       });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       messages,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.markAsRead = async (req, res) => {
+  try {
+    const { conversationSid, identity, lastReadMessageIndex } = req.body;
+
+    if (!conversationSid || !identity) {
+      return res.status(400).json({
+        success: false,
+        message: "conversationSid & identity required",
+      });
+    }
+
+    const conversation = client.conversations.v1
+      .services(SERVICE_SID)
+      .conversations(conversationSid);
+
+    const participants = await conversation.participants.list();
+    const participant = participants.find((p) => p.identity === identity);
+
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: "Participant not found",
+      });
+    }
+
+    let targetIndex = lastReadMessageIndex;
+    
+    // যদি ফ্রন্টএন্ড ইডেক্স না পাঠায়, তবে চ্যাটের সর্বশেষ মেসেজের ইডেক্স খুঁজে বের করবে
+    if (targetIndex === undefined || targetIndex === null) {
+      const messages = await conversation.messages.list({ limit: 1 });
+      targetIndex = messages.length > 0 ? messages[0].index : 0;
+    }
+
+    await conversation.participants(participant.sid).update({
+      lastReadMessageIndex: Number(targetIndex),
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Marked as read",
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       error: error.message,
     });

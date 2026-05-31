@@ -141,6 +141,7 @@ app.use( "/api/v1/subscription",subscriptionRoutes);
 
 app.use( "/api/v1/subscription-payment", subscriptionPaymentRoutes);
 
+
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({
     message: "This is a protected route",
