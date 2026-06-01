@@ -322,24 +322,24 @@ exports.assignDynamicRole = async (req, res) => {
     await user.save();
 
     // 📧 Send mail
-    await sendMail(
-      user.email.trim().toLowerCase(),
-      "🎉 Congratulations! New Role Assigned",
-      emailTemplate(
-        "You've Got a New Role 🚀",
-        `<p>Hey <b>${user.fullname || "User"}</b>,</p>
-         <p>Congratulations! 🎉</p>
-         <p>You have been assigned a new role: <b>${dynamicRole}</b></p>
-         <p>Keep up the great work with KikStart 💙</p>`
-      )
-    );
-
-    // ✅ Response
     res.status(200).json({
       success: true,
       message: "Dynamic role assigned successfully",
       data: user,
     });
+
+    // background mail
+    sendMail(
+      user.email.trim().toLowerCase(),
+      "🎉 Congratulations! New Role Assigned",
+      emailTemplate(
+        "You've Got a New Role 🚀",
+        `<p>Hey <b>${user.fullname || "User"}</b>,</p>
+     <p>Congratulations! 🎉</p>
+     <p>You have been assigned a new role: <b>${dynamicRole}</b></p>
+     <p>Keep up the great work with KikStart 💙</p>`
+      )
+    ).catch((err) => console.log(err));
 
   } catch (error) {
     res.status(500).json({
