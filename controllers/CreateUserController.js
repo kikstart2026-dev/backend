@@ -2,6 +2,9 @@ const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const { sendMail } = require("../middleware/sendMail");
 
+const exportCSV =
+  require("../utils/exportCSV");
+
 const generatePassword = (length = 10) => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let password = "";
@@ -78,18 +81,78 @@ exports.getAllSubAdmins = async (req, res) => {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 5;
 
+    const search = req.query.search || "";
+    const roleFilter = req.query.role || "";
+
+    const sortBy = req.query.sortBy || "createdAt";
+    const sortOrder = req.query.sortOrder || "desc";
+
     const skip = (page - 1) * limit;
 
-    const users = await User.find({ role: "subadmin" })
-      .sort({ createdAt: -1 }) // 🔥 latest first
+    const query = {
+      role: "subadmin",
+    };
+
+    // SEARCH
+    if (search) {
+      query.$or = [
+        {
+          fullname: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          email: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          dynamicRole: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    // FILTER
+    if (roleFilter) {
+
+      if (roleFilter === "no-role") {
+        query.$or = [
+          { dynamicRole: null },
+          { dynamicRole: "" },
+          { dynamicRole: { $exists: false } },
+        ];
+      }
+
+      else {
+        query.dynamicRole = roleFilter;
+      }
+    }
+
+    // SORT
+    const sort = {};
+
+    sort[sortBy] =
+      sortOrder === "asc"
+        ? 1
+        : -1;
+
+    const users = await User.find(query)
+      .sort(sort)
       .skip(skip)
       .limit(limit);
 
-    const total = await User.countDocuments({ role: "subadmin" });
+    const total = await User.countDocuments(query);
 
     res.status(200).json({
       success: true,
       data: users,
+      total,
+      page,
       totalPages: Math.ceil(total / limit),
     });
 
@@ -259,24 +322,24 @@ exports.assignDynamicRole = async (req, res) => {
     await user.save();
 
     // 📧 Send mail
-    await sendMail(
-      user.email.trim().toLowerCase(),
-      "🎉 Congratulations! New Role Assigned",
-      emailTemplate(
-        "You've Got a New Role 🚀",
-        `<p>Hey <b>${user.fullname || "User"}</b>,</p>
-         <p>Congratulations! 🎉</p>
-         <p>You have been assigned a new role: <b>${dynamicRole}</b></p>
-         <p>Keep up the great work with KikStart 💙</p>`
-      )
-    );
-
-    // ✅ Response
     res.status(200).json({
       success: true,
       message: "Dynamic role assigned successfully",
       data: user,
     });
+
+    // background mail
+    sendMail(
+      user.email.trim().toLowerCase(),
+      "🎉 Congratulations! New Role Assigned",
+      emailTemplate(
+        "You've Got a New Role 🚀",
+        `<p>Hey <b>${user.fullname || "User"}</b>,</p>
+     <p>Congratulations! 🎉</p>
+     <p>You have been assigned a new role: <b>${dynamicRole}</b></p>
+     <p>Keep up the great work with KikStart 💙</p>`
+      )
+    ).catch((err) => console.log(err));
 
   } catch (error) {
     res.status(500).json({
@@ -285,3 +348,42 @@ exports.assignDynamicRole = async (req, res) => {
     });
   }
 };
+
+
+
+exports.exportSubAdminsCSV =
+  async (req, res) => {
+    try {
+
+      const users =
+        await User.find({
+          role: "subadmin",
+        }).sort({
+          createdAt: -1,
+        });
+
+      const data =
+        users.map((user) => ({
+          Name: user.fullname,
+          Email: user.email,
+          Role:
+            user.dynamicRole ||
+            "No Role",
+          CreatedAt:
+            user.createdAt,
+        }));
+
+      exportCSV(
+        data,
+        "sub-admins",
+        res
+      );
+
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message:
+          error.message,
+      });
+    }
+  };
