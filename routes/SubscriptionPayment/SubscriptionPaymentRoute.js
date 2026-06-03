@@ -14,6 +14,8 @@ const {
 
   getMyPayments,
 
+  getMonthlyPlanRevenue,
+
 } = require("../../controllers/SubscriptionPayment/SubscriptionPaymentController");
 
 router.get("/all-payments", getAllPayments);
@@ -25,5 +27,11 @@ router.get("/active-plan/:email", getUserActivePlan);
 router.get( "/my-payments/:email", getMyPayments);
 
 router.delete("/refund/:paymentId", deletePayment);
+
+// Revenue Management
+router.get(
+  "/monthly-plan-revenue",
+  getMonthlyPlanRevenue
+);
 
 module.exports = router;

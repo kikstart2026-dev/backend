@@ -500,3 +500,57 @@ exports.getMyPayments = async (req, res) => {
     });
   }
 };
+
+
+// ========================================
+// MONTH WISE PLAN REVENUE
+// ========================================
+
+exports.getMonthlyPlanRevenue = async (req, res) => {
+  try {
+    const revenue = await UserSubscription.aggregate([
+      {
+        $match: {
+          status: "captured",
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: {
+              $year: "$paymentDate",
+            },
+            month: {
+              $month: "$paymentDate",
+            },
+            plan: "$planName",
+          },
+          totalRevenue: {
+            $sum: "$amount",
+          },
+          totalSubscriptions: {
+            $sum: 1,
+          },
+        },
+      },
+      {
+        $sort: {
+          "_id.year": -1,
+          "_id.month": -1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      revenue,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
