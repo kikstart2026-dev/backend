@@ -18,22 +18,19 @@ exports.getAllPayments =
         try {
 
             const payments =
-                await UserSubscription.find()
-
+                await UserSubscription.find({
+                    status: "captured",
+                })
                     .populate("subscriptionId")
-
                     .sort({
                         createdAt: -1,
                     });
 
             const totalAmount =
                 payments.reduce(
-
                     (acc, item) =>
-                        acc + item.amount,
-
+                        acc + Number(item.amount || 0),
                     0
-
                 );
 
             res.status(200).json({
@@ -261,7 +258,7 @@ exports.saveSubscription =
                     created_at: new Date(razorpayPayment.created_at * 1000),
 
                     fee: razorpayPayment.fee ? razorpayPayment.fee / 100 : 0,
-                    
+
                     tax: razorpayPayment.tax ? razorpayPayment.tax / 100 : 0,
 
                     refund_status:
@@ -466,39 +463,39 @@ exports.deletePayment =
 
 
 exports.getMyPayments = async (req, res) => {
-  try {
-    const { email } = req.params;
+    try {
+        const { email } = req.params;
 
-    const payments =
-      await UserSubscription.find({
-        email,
-      })
-        .populate("subscriptionId")
-        .sort({
-          createdAt: -1,
+        const payments =
+            await UserSubscription.find({
+                email,
+            })
+                .populate("subscriptionId")
+                .sort({
+                    createdAt: -1,
+                });
+
+        const totalAmount =
+            payments.reduce(
+                (acc, item) =>
+                    acc + item.amount,
+                0
+            );
+
+        res.status(200).json({
+            success: true,
+            totalPayments:
+                payments.length,
+            totalAmount,
+            payments,
         });
-
-    const totalAmount =
-      payments.reduce(
-        (acc, item) =>
-          acc + item.amount,
-        0
-      );
-
-    res.status(200).json({
-      success: true,
-      totalPayments:
-        payments.length,
-      totalAmount,
-      payments,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error.message,
-    });
-  }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message:
+                error.message,
+        });
+    }
 };
 
 
@@ -507,50 +504,50 @@ exports.getMyPayments = async (req, res) => {
 // ========================================
 
 exports.getMonthlyPlanRevenue = async (req, res) => {
-  try {
-    const revenue = await UserSubscription.aggregate([
-      {
-        $match: {
-          status: "captured",
-        },
-      },
-      {
-        $group: {
-          _id: {
-            year: {
-              $year: "$paymentDate",
+    try {
+        const revenue = await UserSubscription.aggregate([
+            {
+                $match: {
+                    status: "captured",
+                },
             },
-            month: {
-              $month: "$paymentDate",
+            {
+                $group: {
+                    _id: {
+                        year: {
+                            $year: "$paymentDate",
+                        },
+                        month: {
+                            $month: "$paymentDate",
+                        },
+                        plan: "$planName",
+                    },
+                    totalRevenue: {
+                        $sum: "$amount",
+                    },
+                    totalSubscriptions: {
+                        $sum: 1,
+                    },
+                },
             },
-            plan: "$planName",
-          },
-          totalRevenue: {
-            $sum: "$amount",
-          },
-          totalSubscriptions: {
-            $sum: 1,
-          },
-        },
-      },
-      {
-        $sort: {
-          "_id.year": -1,
-          "_id.month": -1,
-        },
-      },
-    ]);
+            {
+                $sort: {
+                    "_id.year": -1,
+                    "_id.month": -1,
+                },
+            },
+        ]);
 
-    res.status(200).json({
-      success: true,
-      revenue,
-    });
-  } catch (error) {
-    console.log(error);
+        res.status(200).json({
+            success: true,
+            revenue,
+        });
+    } catch (error) {
+        console.log(error);
 
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
 };

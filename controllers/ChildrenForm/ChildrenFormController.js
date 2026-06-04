@@ -119,16 +119,34 @@ exports.createChild = async (req, res) => {
 };
 
 
-
 exports.getAllChild = async (req, res) => {
   try {
+    const page =
+      Number(req.query.page) || 1;
 
-    const data = await child.find().sort({
-      createdAt: -1,
-    });
+    const limit = 5;
+
+    const skip =
+      (page - 1) * limit;
+
+    const totalChildren =
+      await child.countDocuments();
+
+    const data =
+      await child.find()
+        .sort({
+          createdAt: -1,
+        })
+        .skip(skip)
+        .limit(limit);
 
     return res.status(200).json({
       success: true,
+      currentPage: page,
+      totalPages: Math.ceil(
+        totalChildren / limit
+      ),
+      totalChildren,
       results: data.length,
       data,
     });
