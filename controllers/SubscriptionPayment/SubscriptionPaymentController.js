@@ -11,58 +11,144 @@ const UserSubscription =
 // ========================================
 // GET ALL PAYMENTS
 // ========================================
+exports.getAllPayments = async (req, res) => {
+  try {
 
-exports.getAllPayments =
-    async (req, res) => {
+    // PAGINATION
+    const page =
+      Number(req.query.page) || 1;
 
-        try {
+    const limit =
+      Number(req.query.limit) || 5;
 
-            const payments =
-                await UserSubscription.find({
-                    status: "captured",
-                })
-                    .populate("subscriptionId")
-                    .sort({
-                        createdAt: -1,
-                    });
+    const skip =
+      (page - 1) * limit;
 
-            const totalAmount =
-                payments.reduce(
-                    (acc, item) =>
-                        acc + Number(item.amount || 0),
-                    0
-                );
+    // SEARCH
+    const search =
+      req.query.search || "";
 
-            res.status(200).json({
+    // FILTER
+    const statusFilter =
+      req.query.status || "";
 
-                success: true,
+    // SORT
+    const sortBy =
+      req.query.sortBy || "createdAt";
 
-                totalPayments:
-                    payments.length,
+    const sortOrder =
+      req.query.sortOrder || "desc";
 
-                totalAmount,
+    // BASE QUERY
+    const query = {};
 
-                payments,
+    // SEARCHING (NAME + EMAIL)
+    if (search) {
 
-            });
+      query.$or = [
 
-        } catch (error) {
+        {
+          fullname: {
+            $regex: search,
+            $options: "i",
+          },
+        },
 
-            console.log(error);
+        {
+          email: {
+            $regex: search,
+            $options: "i",
+          },
+        },
 
-            res.status(500).json({
+      ];
+    }
 
-                success: false,
+    // FILTERING (CAPTURED / FAILED)
+    if (statusFilter) {
+      query.status =
+        statusFilter;
+    }
 
-                message:
-                    "Failed to fetch payments",
+    // SORTING
+    const sort = {};
 
-                error:
-                    error.message,
+    sort[sortBy] =
+      sortOrder === "asc"
+        ? 1
+        : -1;
 
-            });
-        }
-    };
+    // GET PAYMENTS
+    const payments =
+      await UserSubscription.find(query)
+
+        .populate("subscriptionId")
+
+        .sort(sort)
+
+        .skip(skip)
+
+        .limit(limit);
+
+    // TOTAL COUNT
+    const total =
+      await UserSubscription.countDocuments(
+        query
+      );
+
+    // TOTAL AMOUNT
+    const totalAmount =
+      await UserSubscription.aggregate([
+        {
+          $match: query,
+        },
+
+        {
+          $group: {
+            _id: null,
+
+            totalAmount: {
+              $sum: {
+                $toDouble: "$amount",
+              },
+            },
+          },
+        },
+      ]);
+
+    res.status(200).json({
+      success: true,
+
+      totalPayments: total,
+
+      totalAmount:
+        totalAmount.length > 0
+          ? totalAmount[0]
+              .totalAmount
+          : 0,
+
+      payments,
+
+      page,
+
+      totalPages:
+        Math.ceil(total / limit),
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+
+      message:
+        "Failed to fetch payments",
+
+      error: error.message,
+    });
+  }
+};
 
 
 // ========================================
@@ -550,4 +636,63 @@ exports.getMonthlyPlanRevenue = async (req, res) => {
             message: error.message,
         });
     }
+};
+
+
+
+exports.exportPaymentsCSV = async (req, res) => {
+  try {
+
+    const payments = await UserSubscription.find({
+      status: "captured",
+    })
+      .populate("subscriptionId")
+      .sort({
+        createdAt: -1,
+      });
+
+    const data = payments.map((item) => ({
+
+      Name: item.fullname,
+
+      Email: item.email,
+
+      Phone: item.phone,
+
+      PlanName: item.planName,
+
+      Amount: item.amount,
+
+      PaymentId: item.payment_id,
+
+      OrderId: item.order_id,
+
+      Status: item.status,
+
+      Method: item.method,
+
+      Currency: item.currency,
+
+      PaymentDate: item.paymentDate,
+
+      ExpireDate: item.expireDate,
+
+      CreatedAt: item.createdAt,
+
+    }));
+
+    exportCSV(
+      data,
+      "payments",
+      res
+    );
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
 };
