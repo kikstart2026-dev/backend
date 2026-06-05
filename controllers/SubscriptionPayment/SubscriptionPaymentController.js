@@ -7,147 +7,159 @@ const Subscription =
 const UserSubscription =
     require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
 
+    const exportCSV =
+  require("../../utils/exportCSV");
+
 
 // ========================================
 // GET ALL PAYMENTS
 // ========================================
 exports.getAllPayments = async (req, res) => {
-  try {
+    try {
 
-    // PAGINATION
-    const page =
-      Number(req.query.page) || 1;
+        // PAGINATION
+        const page =
+            Number(req.query.page) || 1;
 
-    const limit =
-      Number(req.query.limit) || 5;
+        const limit =
+            Number(req.query.limit) || 5;
 
-    const skip =
-      (page - 1) * limit;
+        const skip =
+            (page - 1) * limit;
 
-    // SEARCH
-    const search =
-      req.query.search || "";
+        // SEARCH
+        const search =
+            req.query.search || "";
 
-    // FILTER
-    const statusFilter =
-      req.query.status || "";
+        // FILTER
+        const statusFilter =
+            req.query.status || "";
 
-    // SORT
-    const sortBy =
-      req.query.sortBy || "createdAt";
+        // SORT
+        const sortBy =
+            req.query.sortBy || "createdAt";
 
-    const sortOrder =
-      req.query.sortOrder || "desc";
+        const sortOrder =
+            req.query.sortOrder || "desc";
 
-    // BASE QUERY
-    const query = {};
+        // BASE QUERY
+        const query = {};
 
-    // SEARCHING (NAME + EMAIL)
-    if (search) {
+        // PLAN FILTER
+        const planFilter =
+            req.query.plan || "";
 
-      query.$or = [
+        if (planFilter) {
+            query.planName =
+                planFilter;
+        }
 
-        {
-          fullname: {
-            $regex: search,
-            $options: "i",
-          },
-        },
+        // SEARCHING (NAME + EMAIL)
+        if (search) {
 
-        {
-          email: {
-            $regex: search,
-            $options: "i",
-          },
-        },
+            query.$or = [
 
-      ];
+                {
+                    fullname: {
+                        $regex: search,
+                        $options: "i",
+                    },
+                },
+
+                {
+                    email: {
+                        $regex: search,
+                        $options: "i",
+                    },
+                },
+
+            ];
+        }
+
+        // FILTERING (CAPTURED / FAILED)
+        if (statusFilter) {
+            query.status =
+                statusFilter;
+        }
+
+        // SORTING
+        const sort = {};
+
+        sort[sortBy] =
+            sortOrder === "asc"
+                ? 1
+                : -1;
+
+        // GET PAYMENTS
+        const payments =
+            await UserSubscription.find(query)
+
+                .populate("subscriptionId")
+
+                .sort(sort)
+
+                .skip(skip)
+
+                .limit(limit);
+
+        // TOTAL COUNT
+        const total =
+            await UserSubscription.countDocuments(
+                query
+            );
+
+        // TOTAL AMOUNT
+        const totalAmount =
+            await UserSubscription.aggregate([
+                {
+                    $match: query,
+                },
+
+                {
+                    $group: {
+                        _id: null,
+
+                        totalAmount: {
+                            $sum: {
+                                $toDouble: "$amount",
+                            },
+                        },
+                    },
+                },
+            ]);
+
+        res.status(200).json({
+            success: true,
+
+            totalPayments: total,
+
+            totalAmount:
+                totalAmount.length > 0
+                    ? totalAmount[0]
+                        .totalAmount
+                    : 0,
+
+            payments,
+
+            page,
+
+            totalPages:
+                Math.ceil(total / limit),
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        res.status(500).json({
+            success: false,
+
+            message:
+                "Failed to fetch payments",
+
+            error: error.message,
+        });
     }
-
-    // FILTERING (CAPTURED / FAILED)
-    if (statusFilter) {
-      query.status =
-        statusFilter;
-    }
-
-    // SORTING
-    const sort = {};
-
-    sort[sortBy] =
-      sortOrder === "asc"
-        ? 1
-        : -1;
-
-    // GET PAYMENTS
-    const payments =
-      await UserSubscription.find(query)
-
-        .populate("subscriptionId")
-
-        .sort(sort)
-
-        .skip(skip)
-
-        .limit(limit);
-
-    // TOTAL COUNT
-    const total =
-      await UserSubscription.countDocuments(
-        query
-      );
-
-    // TOTAL AMOUNT
-    const totalAmount =
-      await UserSubscription.aggregate([
-        {
-          $match: query,
-        },
-
-        {
-          $group: {
-            _id: null,
-
-            totalAmount: {
-              $sum: {
-                $toDouble: "$amount",
-              },
-            },
-          },
-        },
-      ]);
-
-    res.status(200).json({
-      success: true,
-
-      totalPayments: total,
-
-      totalAmount:
-        totalAmount.length > 0
-          ? totalAmount[0]
-              .totalAmount
-          : 0,
-
-      payments,
-
-      page,
-
-      totalPages:
-        Math.ceil(total / limit),
-    });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res.status(500).json({
-      success: false,
-
-      message:
-        "Failed to fetch payments",
-
-      error: error.message,
-    });
-  }
 };
 
 
@@ -642,43 +654,26 @@ exports.getMonthlyPlanRevenue = async (req, res) => {
 
 exports.exportPaymentsCSV = async (req, res) => {
   try {
-
     const payments = await UserSubscription.find({
       status: "captured",
     })
       .populate("subscriptionId")
-      .sort({
-        createdAt: -1,
-      });
+      .sort({ createdAt: -1 });
 
     const data = payments.map((item) => ({
-
       Name: item.fullname,
-
       Email: item.email,
-
       Phone: item.phone,
-
       PlanName: item.planName,
-
       Amount: item.amount,
-
       PaymentId: item.payment_id,
-
       OrderId: item.order_id,
-
       Status: item.status,
-
       Method: item.method,
-
       Currency: item.currency,
-
       PaymentDate: item.paymentDate,
-
       ExpireDate: item.expireDate,
-
       CreatedAt: item.createdAt,
-
     }));
 
     exportCSV(
@@ -686,13 +681,10 @@ exports.exportPaymentsCSV = async (req, res) => {
       "payments",
       res
     );
-
   } catch (error) {
-
     res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
