@@ -1,4 +1,5 @@
 const User = require("../models/authModel");
+const Program = require("../models/Service/ServiceModel");
 const bcrypt = require("bcryptjs");
 const { sendMail } = require("../middleware/sendMail");
 const exportCSV = require("../utils/exportCSV");
@@ -259,6 +260,7 @@ exports.getAllCoaches =
 
       const coaches =
         await User.find(query)
+          .populate("programs")
           .sort(sort)
           .skip(skip)
           .limit(limit);
@@ -295,7 +297,7 @@ exports.getAllCoaches =
 
   };
 
-  // ======================================================
+// ======================================================
 // GET COACH BY ID
 // ======================================================
 
@@ -305,7 +307,7 @@ exports.getCoachById = async (req, res) => {
     const coach = await User.findOne({
       _id: req.params.id,
       role: "coach",
-    });
+    }).populate("programs");
 
     if (!coach) {
       return res.status(404).json({
@@ -326,6 +328,45 @@ exports.getCoachById = async (req, res) => {
       message: err.message,
     });
 
+  }
+};
+
+// ======================================================
+// ASSIGN PROGRAMS TO COACH
+// ======================================================
+
+exports.assignProgramsToCoach = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { programIds } = req.body;
+
+    const coach = await User.findOne({
+      _id: id,
+      role: "coach",
+    });
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+    }
+
+    coach.programs = programIds;
+
+    await coach.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Programs assigned successfully",
+      data: coach,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };
 

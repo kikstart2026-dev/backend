@@ -6,6 +6,7 @@ const {
   createCoach,
   getAllCoaches,
   getCoachById,
+  assignProgramsToCoach,
   updateCoach,
   deleteCoach,
   exportCoachesCSV,
@@ -18,6 +19,11 @@ router.get("/", getAllCoaches);
 router.get("/export", exportCoachesCSV);
 
 router.get("/:id", getCoachById);
+
+router.patch(
+  "/assign-programs/:id",
+  assignProgramsToCoach
+);
 
 router.put("/:id", updateCoach);
 

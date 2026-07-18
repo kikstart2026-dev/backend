@@ -64,6 +64,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null, // e.g. "manager", "editor"
     },
+
+    programs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+      },
+    ],
   },
   { timestamps: true },
 );
