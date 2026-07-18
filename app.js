@@ -146,6 +146,7 @@ app.use( "/api/v1/subscription",subscriptionRoutes);
 
 app.use( "/api/v1/subscription-payment", subscriptionPaymentRoutes);
 
+app.use("/api/v1/coach", coachRoutes);
 app.use("/api/v1/admin/coach", coachRoutes);
 
 app.get("/api/v1", authMiddleware, (req, res) => {

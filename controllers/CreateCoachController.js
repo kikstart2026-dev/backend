@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs");
 const { sendMail } = require("../middleware/sendMail");
 const exportCSV = require("../utils/exportCSV");
 
+const Child = require("../models/ChildrenForm/ChildrenFormModel");
+
 // =========================
 // Generate Random Password
 // =========================
@@ -370,6 +372,11 @@ exports.assignProgramsToCoach = async (req, res) => {
   }
 };
 
+
+
+
+
+
 // ======================================================
 // UPDATE COACH
 // ======================================================
@@ -476,6 +483,60 @@ exports.deleteCoach = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Coach deleted successfully",
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
+  }
+};
+
+
+
+// ======================================================
+// GET CHILDREN OF A COACH
+// ======================================================
+
+exports.getCoachChildren = async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    const coach = await User.findOne({
+      _id: id,
+      role: "coach",
+    });
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+    }
+
+    const children = await Child.find({
+      coach: id,
+    })
+      .populate({
+        path: "coach",
+        select: "fullname email phone location image",
+      })
+      .populate({
+        path: "program",
+        select: "title image",
+      })
+      .sort({
+        createdAt: -1,
+      });
+
+    res.status(200).json({
+      success: true,
+      results: children.length,
+      data: children,
     });
 
   } catch (err) {

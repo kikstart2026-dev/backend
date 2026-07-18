@@ -56,6 +56,20 @@ const childrenSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    // ✅ ADD
+    coach: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "KikstartUser",
+      default: null,
+    },
+
+    // ✅ ADD
+    program: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
+      default: null,
+    },
   },
   { timestamps: true }
 );

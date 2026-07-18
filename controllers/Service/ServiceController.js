@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const ServiceModel = require("../../models/Service/ServiceModel");
-
-
+const User = require("../../models/authModel");
 // ==========================
 // ✅ CREATE
 // ==========================
@@ -52,12 +51,13 @@ exports.createService = async (req, res) => {
 // ==========================
 exports.getAllService = async (req, res) => {
   try {
-    // ✅ query params
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 9;
+    const all = req.query.all === "true";
+
     const skip = (page - 1) * limit;
 
-    const data = await ServiceModel.aggregate([
+    const pipeline = [
       {
         $lookup: {
           from: "headings",
@@ -85,11 +85,15 @@ exports.getAllService = async (req, res) => {
           "headingData.description": 1,
         },
       },
-      { $skip: skip },   // ✅ ADD
-      { $limit: limit }, // ✅ ADD
-    ]);
+    ];
 
-    // ✅ total count
+    // only admin page gets pagination
+    if (!all) {
+      pipeline.push({ $skip: skip });
+      pipeline.push({ $limit: limit });
+    }
+
+    const data = await ServiceModel.aggregate(pipeline);
     const total = await ServiceModel.countDocuments();
 
     res.status(200).json({
@@ -100,7 +104,6 @@ exports.getAllService = async (req, res) => {
       totalPages: Math.ceil(total / limit),
       data,
     });
-
   } catch (err) {
     res.status(500).json({
       status: "error",
@@ -130,6 +133,7 @@ exports.getServiceById = async (req, res) => {
           _id: new mongoose.Types.ObjectId(mongoId),
         },
       },
+
       {
         $lookup: {
           from: "headings",
@@ -138,13 +142,55 @@ exports.getServiceById = async (req, res) => {
           as: "headingData",
         },
       },
+
       {
-        // ✅ SAME FIX HERE ALSO
         $unwind: {
           path: "$headingData",
           preserveNullAndEmptyArrays: true,
         },
       },
+
+      // ===========================
+      // Assigned Coaches
+      // ===========================
+      {
+        $lookup: {
+         from: "kikstartusers",
+          let: {
+            programId: "$_id",
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: ["$role", "coach"],
+                    },
+                    {
+                      $in: [
+                        "$$programId",
+                        "$programs",
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                fullname: 1,
+                email: 1,
+                phone: 1,
+                location: 1,
+              },
+            },
+          ],
+          as: "coaches",
+        },
+      },
+
       {
         $project: {
           title: 1,
@@ -152,6 +198,9 @@ exports.getServiceById = async (req, res) => {
           image: 1,
           video: 1,
           details2: 1,
+
+          coaches: 1,
+
           "headingData._id": 1,
           "headingData.tagline": 1,
           "headingData.heading": 1,

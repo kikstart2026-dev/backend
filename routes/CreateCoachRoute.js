@@ -10,6 +10,7 @@ const {
   updateCoach,
   deleteCoach,
   exportCoachesCSV,
+  getCoachChildren
 } = require("../controllers/CreateCoachController");
 
 router.post("/create", createCoach);
@@ -18,7 +19,11 @@ router.get("/", getAllCoaches);
 
 router.get("/export", exportCoachesCSV);
 
+router.get("/:id/children", getCoachChildren);
+
 router.get("/:id", getCoachById);
+
+
 
 router.patch(
   "/assign-programs/:id",
@@ -26,6 +31,7 @@ router.patch(
 );
 
 router.put("/:id", updateCoach);
+
 
 router.delete("/:id", deleteCoach);
 
