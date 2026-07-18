@@ -41,6 +41,8 @@ const userRouter = require("./routes/User/UserRoute");
 const permissionRoutes = require("./routes/PermissionRoute");
 const userRoutes = require("./routes/CreateUserRoute");
 
+const coachRoutes = require("./routes/CreateCoachRoute");
+
 const paymentRoutes = require('./routes/Payment/razorpayRoute');
 
 const ChildrenFormRouter = require("./routes/ChildrenForm/ChildrenFormRoute");
@@ -82,6 +84,9 @@ app.use(
   "/uploads",
   express.static(path.join(__dirname, "middleware/uploads"))
 );
+
+
+
 
 // Routes
 
@@ -141,6 +146,7 @@ app.use( "/api/v1/subscription",subscriptionRoutes);
 
 app.use( "/api/v1/subscription-payment", subscriptionPaymentRoutes);
 
+app.use("/api/v1/admin/coach", coachRoutes);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({

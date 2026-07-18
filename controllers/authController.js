@@ -193,7 +193,7 @@ exports.otpVerify = async (req, res) => {
         location: user.location || null,
         phone: user.phone || null,
         passcode: user.passcode || null,
-        image: user.image || null 
+        image: user.image || null
       },
     });
   } catch (error) {
@@ -259,7 +259,7 @@ exports.resendOtp = async (req, res) => {
 // =================================================
 exports.login = async (req, res) => {
   try {
-    const { email, phone, password } = req.body;
+    const { email, phone, password, role } = req.body;
 
     if (!password) {
       return res.status(400).json({ message: "Password is required" });
@@ -282,6 +282,20 @@ exports.login = async (req, res) => {
     }
 
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // ✅ Coach login check
+    if (role === "coach" && user.role !== "coach") {
+      return res.status(403).json({
+        message: "Only coach can login from coach portal.",
+      });
+    }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: `Only ${role} can login here.`,
+      });
+    }
 
     // if (!user.isVerified) {
     //   return res.status(400).json({
@@ -583,6 +597,76 @@ exports.googleAuth = async (req, res) => {
     return res.status(500).json({
       message: "Google authentication failed",
       error: error.message,
+    });
+  }
+};
+
+
+exports.getCoachProfile = async (req, res) => {
+  try {
+    const coach = await User.findById(req.user._id).select("-password");
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: coach,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+exports.changeCoachPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    const coach = await User.findById(req.user._id);
+
+    const isMatch = await bcrypt.compare(oldPassword, coach.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect",
+      });
+    }
+
+    coach.password = await bcrypt.hash(newPassword, 10);
+
+    await coach.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
