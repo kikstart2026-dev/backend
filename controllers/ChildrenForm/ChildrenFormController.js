@@ -3,8 +3,8 @@ const child = require("../../models/ChildrenForm/ChildrenFormModel");
 const UserSubscription = require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
 const path = require("path");
 
-
-
+const Notification = require("../../models/notificationModel");
+const Program = require("../../models/Service/ServiceModel");
 exports.createChild = async (req, res) => {
   try {
 
@@ -26,7 +26,18 @@ exports.createChild = async (req, res) => {
     let assignments = [];
 
     if (programAssignments) {
+
       assignments = JSON.parse(programAssignments);
+
+
+      assignments = assignments.map(item => ({
+
+        ...item,
+
+        assignedAt: new Date()
+
+      }));
+
     }
 
     // ✅ IMAGE PATH FROM MULTER
@@ -110,8 +121,23 @@ exports.createChild = async (req, res) => {
 
       programAssignments: assignments,
     });
+    const uniqueCoachIds = [
+      ...new Set(
+        assignments
+          .filter((item) => item.coach)
+          .map((item) => item.coach.toString())
+      ),
+    ];
 
-
+    for (const coachId of uniqueCoachIds) {
+      await Notification.create({
+        coachId,
+        childId: newChild._id,
+        title: "New Child Assigned",
+        message: `${newChild.fullName} has been assigned to you.`,
+        type: "child_assigned",
+      });
+    }
 
     return res.status(201).json({
       success: true,
@@ -234,23 +260,20 @@ exports.getChildById = async (req, res) => {
 
 exports.updateChild = async (req, res) => {
   try {
+
     const childId = req.params.id;
 
-    if (!mongoose.Types.ObjectId.isValid(childId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid child id",
-      });
-    }
 
     const existingChild = await child.findById(childId);
+
 
     if (!existingChild) {
       return res.status(404).json({
         success: false,
-        message: "Child profile not found",
+        message: "Child profile not found"
       });
     }
+
 
     const {
       fullName,
@@ -264,18 +287,61 @@ exports.updateChild = async (req, res) => {
       programAssignments,
     } = req.body;
 
+
+
     const imagePath = req.file
       ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
       : existingChild.profileImage;
 
+
+
     let assignments =
       existingChild.programAssignments || [];
 
-    if (programAssignments) {
-      assignments = JSON.parse(programAssignments);
-    }
+
+
+   if(programAssignments){
+
+  const newAssignments = JSON.parse(programAssignments);
+
+
+  assignments = newAssignments.map(item=>{
+
+
+    const oldAssignment =
+      existingChild.programAssignments.find(
+        old =>
+          old.program.toString() === item.program.toString() &&
+          old.coach.toString() === item.coach.toString()
+      );
+
+
+
+    return {
+
+      program:item.program,
+
+      coach:item.coach,
+
+
+      // old program হলে old time
+      // new program হলে new time
+
+      assignedAt:
+        oldAssignment?.assignedAt || new Date()
+
+    };
+
+
+  });
+
+
+}
+
+
 
     const updatedData = {
+
       fullName,
       email,
       age,
@@ -284,38 +350,112 @@ exports.updateChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
+
       profileImage: imagePath,
 
-      programAssignments: assignments,
+      programAssignments: assignments
+
     };
 
-    const updatedChild = await child
-      .findByIdAndUpdate(
+
+
+    // ===============================
+    // CREATE COACH NOTIFICATION
+    // ===============================
+
+
+    const oldAssignments =
+      existingChild.programAssignments.map(item => ({
+        coach: item.coach.toString(),
+        program: item.program.toString()
+      }));
+
+
+    for (const item of assignments) {
+
+      const newAssignment = {
+        coach: item.coach.toString(),
+        program: item.program.toString()
+      };
+
+
+      const alreadyExist =
+        oldAssignments.some(old =>
+          old.coach === newAssignment.coach &&
+          old.program === newAssignment.program
+        );
+
+
+      // নতুন program + coach assignment হলে notification
+
+      if (!alreadyExist) {
+
+        const program =
+          await Program.findById(item.program);
+
+
+        await Notification.create({
+
+          coachId: item.coach,
+
+          childId: existingChild._id,
+
+          programId: item.program,
+
+          title: "New Program Assigned",
+
+          message:
+            `${existingChild.fullName} has been assigned ${program?.title || "a new program"}.`,
+
+          type: "program_assigned"
+
+        });
+
+      }
+
+    }
+
+
+
+    const updatedChild =
+      await child.findByIdAndUpdate(
         childId,
         updatedData,
         { new: true }
       )
-      .populate({
-        path: "programAssignments.program",
-        select: "title",
-      })
-      .populate({
-        path: "programAssignments.coach",
-        select:
-          "fullname email phone location",
-      });
+        .populate({
+          path: "programAssignments.program",
+          select: "title image"
+        })
+        .populate({
+          path: "programAssignments.coach",
+          select: "fullname email phone location"
+        });
+
+
 
     return res.status(200).json({
+
       success: true,
-      message:
-        "Child profile updated successfully",
-      data: updatedChild,
+
+      message: "Child profile updated successfully",
+
+      data: updatedChild
+
     });
+
+
+
   } catch (error) {
-    return res.status(500).json({
+
+    res.status(500).json({
+
       success: false,
-      message: error.message,
+
+      message: error.message
+
     });
+
   }
 };
 
@@ -425,14 +565,6 @@ exports.getCoachChildren = async (req, res) => {
       });
 
 
-    console.log(
-      JSON.stringify(children, null, 2)
-    );
-
-    console.log("Coach ID:", coachId);
-    console.log("Matched Children:", children);
-
-    // শুধুমাত্র logged-in coach-এর assignments রাখবে
     const filteredChildren = children.map((childData) => {
       const assignments =
         childData.programAssignments.filter(

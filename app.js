@@ -52,14 +52,14 @@ const SchoolDetailsRouter = require("./routes/SchoolDetails/SchoolDetailsRoute")
 const ConversationRouter = require("./routes/Conversation/ConversationRoute");
 
 const MessageRouter = require("./routes/Conversation/MessageRoute");
-
+const notificationRoutes = require( "./routes/notificationRoutes" );
 
 //subscription
 const subscriptionRoutes = require( "./routes/Subscription/SubscriptionRoute");
 
 const subscriptionPaymentRoutes = require( "./routes/SubscriptionPayment/SubscriptionPaymentRoute" );
 
-
+  
 
 
 
@@ -148,6 +148,11 @@ app.use( "/api/v1/subscription-payment", subscriptionPaymentRoutes);
 
 app.use("/api/v1/coach", coachRoutes);
 app.use("/api/v1/admin/coach", coachRoutes);
+
+app.use(
+  "/api/v1/notification",
+  notificationRoutes
+);
 
 app.get("/api/v1", authMiddleware, (req, res) => {
   res.json({

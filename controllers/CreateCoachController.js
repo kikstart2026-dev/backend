@@ -3,7 +3,7 @@ const Program = require("../models/Service/ServiceModel");
 const bcrypt = require("bcryptjs");
 const { sendMail } = require("../middleware/sendMail");
 const exportCSV = require("../utils/exportCSV");
-
+const Notification = require("../models/notificationModel");
 const Child = require("../models/ChildrenForm/ChildrenFormModel");
 
 // =========================
@@ -339,36 +339,111 @@ exports.getCoachById = async (req, res) => {
 
 exports.assignProgramsToCoach = async (req, res) => {
   try {
+
     const { id } = req.params;
     const { programIds } = req.body;
+
 
     const coach = await User.findOne({
       _id: id,
       role: "coach",
     });
 
+
     if (!coach) {
       return res.status(404).json({
         success: false,
-        message: "Coach not found",
+        message: "Coach not found"
       });
     }
 
+
+
+    // OLD PROGRAMS
+    const oldProgramIds = coach.programs.map(
+      id => id.toString()
+    );
+
+
+
+    // UPDATE PROGRAMS
     coach.programs = programIds;
 
     await coach.save();
 
+
+
+    // ONLY NEW PROGRAMS
+    const newProgramIds = programIds.filter(
+      id => !oldProgramIds.includes(id.toString())
+    );
+
+
+
+    // NO NEW PROGRAM - NO NOTIFICATION
+    if (newProgramIds.length > 0) {
+
+
+      const programs = await Program.find({
+        _id: {
+          $in: newProgramIds
+        }
+      });
+
+
+
+      for (const program of programs) {
+
+
+        await Notification.create({
+
+          coachId: coach._id,
+
+          childId: null,
+
+          programId: program._id,
+
+
+          title: "Program Assigned",
+
+
+          message:
+            `${program.title} has been assigned to you.`,
+
+
+          type: "program_assigned"
+
+        });
+
+
+      }
+
+    }
+
+
+
     res.status(200).json({
+
       success: true,
+
       message: "Programs assigned successfully",
-      data: coach,
+
+      data: coach
+
     });
 
-  } catch (err) {
+
+
+  } catch (error) {
+
     res.status(500).json({
+
       success: false,
-      message: err.message,
+
+      message: error.message
+
     });
+
   }
 };
 
@@ -591,147 +666,280 @@ exports.exportCoachesCSV = async (req, res) => {
 //=======================================================
 
 exports.getCoachDashboard = async (req, res) => {
+
   try {
 
-    console.log("========== COACH DASHBOARD HIT ==========");
-
-console.log("REQ.USER =>", req.user);
 
     const coachId = req.user._id;
-    console.log("COACH ID =>", coachId);
 
 
-    // Coach info + programs
+
+    // ================= COACH INFO + PROGRAMS =================
+
+
     const coach = await User.findById(coachId)
       .select("-password")
       .populate("programs");
 
 
+
     if (!coach) {
+
       return res.status(404).json({
+
         success: false,
+
         message: "Coach not found"
+
       });
+
     }
 
 
-    // Children under this coach
+
+    // ================= CHILDREN UNDER THIS COACH =================
+
+
     const children = await Child.find({
+
       "programAssignments.coach": coachId
+
     })
       .populate({
+
         path: "programAssignments.program",
+
         select: "title image"
+
       })
       .populate({
+
         path: "programAssignments.coach",
+
         select: "fullname email phone location"
+
       })
       .select(
         "fullName age profileImage programAssignments"
+      )
+      .sort({
+
+        createdAt: -1
+
+      });
+
+
+
+
+
+    // ================= RECENT ACTIVITY =================
+
+
+    const childrenWithAssignments = await Child.find({
+
+      "programAssignments.coach": coachId
+
+    })
+      .populate({
+
+        path: "programAssignments.program",
+
+        select: "title"
+
+      })
+      .populate({
+
+        path: "programAssignments.coach",
+
+        select: "fullname"
+
+      })
+      .select(
+        "fullName programAssignments createdAt"
       );
 
-// ================= RECENT ACTIVITY =================
 
 
-const lastChild = await Child.findOne({
-  "programAssignments.coach": coachId
-})
-.sort({
-  createdAt: -1
-})
-.select("fullName createdAt");
-
-
-const lastUpdatedProgram = await Program.findOne({
-  _id: {
-    $in: coach.programs
-  }
-})
-.sort({
-  updatedAt: -1
-})
-.select("title updatedAt");
+    const activities = [];
 
 
 
-const activities = [];
+    childrenWithAssignments.forEach((childData) => {
+
+
+      childData.programAssignments.forEach((assignment) => {
+
+
+        if (
+          assignment.coach &&
+          assignment.coach._id.toString() === coachId.toString()
+        ) {
+
+
+          activities.push({
+
+            childName:
+              childData.fullName,
+
+
+            programName:
+              assignment.program?.title || "Program",
+
+
+            time:
+              assignment.assignedAt || childData.createdAt
+
+
+          });
+
+
+        }
+
+
+      });
+
+
+    });
 
 
 
-if(lastChild){
+    // latest first
 
-  activities.push({
+    activities.sort((a, b) => {
 
-    title: `${lastChild.fullName} assigned to you`,
+      return new Date(b.time) - new Date(a.time);
 
-    time: lastChild.createdAt
-
-  });
-
-}
+    });
 
 
 
-if(lastUpdatedProgram){
 
-  activities.push({
+    // only latest child + latest program
 
-    title: `${lastUpdatedProgram.title} program updated`,
+    const recentActivity = [];
 
-    time: lastUpdatedProgram.updatedAt
 
-  });
+    if (activities.length > 0) {
 
-}
+
+      recentActivity.push({
+
+        title:
+          `${activities[0].childName} assigned to you`,
+
+
+        time:
+          activities[0].time
+
+      });
+
+
+
+      recentActivity.push({
+
+        title:
+          `${activities[0].programName} program assigned`,
+
+
+        time:
+          activities[0].time
+
+      });
+
+
+    }
+
+
+
+
+    // ================= RESPONSE =================
+
 
     return res.status(200).json({
+
 
       success: true,
 
 
+
       coach: {
+
+
         fullname: coach.fullname,
+
         email: coach.email,
+
         phone: coach.phone,
+
         location: coach.location,
+
         image: coach.image
+
+
       },
+
 
 
       stats: {
 
+
         totalChildren: children.length,
+
 
         totalPrograms: coach.programs.length,
 
+
         upcomingSessions: 0,
+
 
         messages: 0
 
+
       },
+
 
 
       programs: coach.programs,
 
 
+
       children: children,
 
 
-      activities: activities,
+      activities: recentActivity
+
+
 
     });
+
+
 
 
 
   } catch (error) {
 
-     console.log("COACH DASHBOARD ERROR =>", error);
 
-    res.status(500).json({
+
+    console.log(
+      "COACH DASHBOARD ERROR =>",
+      error
+    );
+
+
+
+    return res.status(500).json({
+
+
       success: false,
+
+
       message: error.message
+
+
     });
 
+
   }
+
+
 };

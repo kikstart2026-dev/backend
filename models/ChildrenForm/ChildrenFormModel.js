@@ -62,17 +62,20 @@ const childrenSchema = new mongoose.Schema(
       {
         program: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Service",
-          required: true,
+          ref: "Service"
         },
 
         coach: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "KikstartUser",
-          required: true,
+          ref: "KikstartUser"
         },
-      },
-    ],
+
+        assignedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ]
   },
   { timestamps: true }
 );
