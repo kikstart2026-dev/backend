@@ -10,8 +10,19 @@ const {
   updateCoach,
   deleteCoach,
   exportCoachesCSV,
-  getCoachChildren
+  getCoachChildren,
+  getCoachDashboard
 } = require("../controllers/CreateCoachController");
+
+const authMiddleware = require("../middleware/authMiddleware");
+const coachMiddleware = require("../middleware/coachMiddleware");
+
+router.get(
+  "/dashboard",
+  authMiddleware,
+  coachMiddleware,
+  getCoachDashboard
+);
 
 router.post("/create", createCoach);
 
@@ -22,7 +33,6 @@ router.get("/export", exportCoachesCSV);
 router.get("/:id/children", getCoachChildren);
 
 router.get("/:id", getCoachById);
-
 
 
 router.patch(

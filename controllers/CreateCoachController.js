@@ -585,3 +585,153 @@ exports.exportCoachesCSV = async (req, res) => {
 
   }
 };
+
+//=======================================================
+//COACH DASHBOARD
+//=======================================================
+
+exports.getCoachDashboard = async (req, res) => {
+  try {
+
+    console.log("========== COACH DASHBOARD HIT ==========");
+
+console.log("REQ.USER =>", req.user);
+
+    const coachId = req.user._id;
+    console.log("COACH ID =>", coachId);
+
+
+    // Coach info + programs
+    const coach = await User.findById(coachId)
+      .select("-password")
+      .populate("programs");
+
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found"
+      });
+    }
+
+
+    // Children under this coach
+    const children = await Child.find({
+      "programAssignments.coach": coachId
+    })
+      .populate({
+        path: "programAssignments.program",
+        select: "title image"
+      })
+      .populate({
+        path: "programAssignments.coach",
+        select: "fullname email phone location"
+      })
+      .select(
+        "fullName age profileImage programAssignments"
+      );
+
+// ================= RECENT ACTIVITY =================
+
+
+const lastChild = await Child.findOne({
+  "programAssignments.coach": coachId
+})
+.sort({
+  createdAt: -1
+})
+.select("fullName createdAt");
+
+
+const lastUpdatedProgram = await Program.findOne({
+  _id: {
+    $in: coach.programs
+  }
+})
+.sort({
+  updatedAt: -1
+})
+.select("title updatedAt");
+
+
+
+const activities = [];
+
+
+
+if(lastChild){
+
+  activities.push({
+
+    title: `${lastChild.fullName} assigned to you`,
+
+    time: lastChild.createdAt
+
+  });
+
+}
+
+
+
+if(lastUpdatedProgram){
+
+  activities.push({
+
+    title: `${lastUpdatedProgram.title} program updated`,
+
+    time: lastUpdatedProgram.updatedAt
+
+  });
+
+}
+
+    return res.status(200).json({
+
+      success: true,
+
+
+      coach: {
+        fullname: coach.fullname,
+        email: coach.email,
+        phone: coach.phone,
+        location: coach.location,
+        image: coach.image
+      },
+
+
+      stats: {
+
+        totalChildren: children.length,
+
+        totalPrograms: coach.programs.length,
+
+        upcomingSessions: 0,
+
+        messages: 0
+
+      },
+
+
+      programs: coach.programs,
+
+
+      children: children,
+
+
+      activities: activities,
+
+    });
+
+
+
+  } catch (error) {
+
+     console.log("COACH DASHBOARD ERROR =>", error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+
+  }
+};
