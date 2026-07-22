@@ -16,6 +16,11 @@ router.get(
   childController.getMyChildren
 );
 
+router.get(
+  "/coach/:coachId/children",
+  childController.getCoachChildren
+);
+
 // router.put("/updateChild/:id",childController.updateChild);
 router.put(
   "/updateChild/:id",

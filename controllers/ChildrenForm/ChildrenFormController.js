@@ -411,34 +411,51 @@ exports.getMyChildren = async (req, res) => {
 
 exports.getCoachChildren = async (req, res) => {
   try {
-
     const { coachId } = req.params;
 
-   const children = await child
-  .find({
-    "programAssignments.coach": coachId,
-  })
-  .populate({
-    path: "programAssignments.program",
-    select: "title",
-  })
-  .populate({
-    path: "programAssignments.coach",
-    select: "fullname email phone",
-  });
+    const children = await child
+      .find({
+        "programAssignments.coach": coachId,
+      })
+      .populate({
+        path: "programAssignments.program",
+      })
+      .populate({
+        path: "programAssignments.coach",
+      });
 
-    res.status(200).json({
-      success: true,
-      results: children.length,
-      data: children,
+
+    console.log(
+      JSON.stringify(children, null, 2)
+    );
+
+    console.log("Coach ID:", coachId);
+    console.log("Matched Children:", children);
+
+    // শুধুমাত্র logged-in coach-এর assignments রাখবে
+    const filteredChildren = children.map((childData) => {
+      const assignments =
+        childData.programAssignments.filter(
+          (assignment) =>
+            assignment.coach &&
+            assignment.coach._id.toString() === coachId
+        );
+
+      return {
+        ...childData.toObject(),
+        programAssignments: assignments,
+      };
     });
 
+    return res.status(200).json({
+      success: true,
+      results: filteredChildren.length,
+      data: filteredChildren,
+    });
   } catch (error) {
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
