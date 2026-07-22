@@ -19,10 +19,15 @@ exports.createChild = async (req, res) => {
       allergyDetails,
       prolongDisease,
 
-      coach,
-      program,
+      programAssignments,
 
     } = req.body;
+
+    let assignments = [];
+
+    if (programAssignments) {
+      assignments = JSON.parse(programAssignments);
+    }
 
     // ✅ IMAGE PATH FROM MULTER
     const profileImage = req.file
@@ -91,23 +96,22 @@ exports.createChild = async (req, res) => {
 
     // ================= CREATE CHILD =================
 
-const newChild = await child.create({
+    const newChild = await child.create({
+      fullName,
+      email,
+      location,
+      age,
+      passCode,
+      foodHabit,
+      allergy,
+      allergyDetails,
+      prolongDisease,
+      profileImage,
 
-  fullName,
-  email,
-  location,
-  age,
-  passCode,
-  foodHabit,
-  allergy,
-  allergyDetails,
-  prolongDisease,
-  profileImage,
+      programAssignments: assignments,
+    });
 
-  coach,
-  program,
 
-});
 
     return res.status(201).json({
       success: true,
@@ -141,14 +145,20 @@ exports.getAllChild = async (req, res) => {
     const totalChildren =
       await child.countDocuments();
 
-const data = await child.find()
-  .populate("coach", "fullname email phone location")
-  .populate("program", "title")
-  .sort({
-    createdAt: -1,
-  })
-  .skip(skip)
-  .limit(limit);
+    const data = await child.find()
+      .populate({
+        path: "programAssignments.program",
+        select: "title",
+      })
+      .populate({
+        path: "programAssignments.coach",
+        select: "fullname email phone location",
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({
       success: true,
@@ -188,8 +198,14 @@ exports.getChildById = async (req, res) => {
 
 
     const data = await child.findById(childId)
-  .populate("coach", "fullname email phone location")
-  .populate("program", "title");
+      .populate({
+        path: "programAssignments.program",
+        select: "title",
+      })
+      .populate({
+        path: "programAssignments.coach",
+        select: "fullname email phone location",
+      })
 
     if (!data) {
       return res.status(404).json({
@@ -218,7 +234,6 @@ exports.getChildById = async (req, res) => {
 
 exports.updateChild = async (req, res) => {
   try {
-
     const childId = req.params.id;
 
     if (!mongoose.Types.ObjectId.isValid(childId)) {
@@ -246,13 +261,19 @@ exports.updateChild = async (req, res) => {
       allergy,
       allergyDetails,
       prolongDisease,
-      // profileImage,
+      programAssignments,
     } = req.body;
 
-    // ✅ IMAGE FIX (multer)
     const imagePath = req.file
       ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
       : existingChild.profileImage;
+
+    let assignments =
+      existingChild.programAssignments || [];
+
+    if (programAssignments) {
+      assignments = JSON.parse(programAssignments);
+    }
 
     const updatedData = {
       fullName,
@@ -265,30 +286,36 @@ exports.updateChild = async (req, res) => {
       prolongDisease,
       profileImage: imagePath,
 
-      // // ✅ new image na hole old image thakbe
-      // profileImage:
-      //   profileImage || existingChild.profileImage,
+      programAssignments: assignments,
     };
 
-    const updatedChild = await child.findByIdAndUpdate(
-      childId,
-      updatedData,
-      { new: true }
-    );
+    const updatedChild = await child
+      .findByIdAndUpdate(
+        childId,
+        updatedData,
+        { new: true }
+      )
+      .populate({
+        path: "programAssignments.program",
+        select: "title",
+      })
+      .populate({
+        path: "programAssignments.coach",
+        select:
+          "fullname email phone location",
+      });
 
     return res.status(200).json({
       success: true,
-      message: "Child profile updated successfully",
+      message:
+        "Child profile updated successfully",
       data: updatedChild,
     });
-
   } catch (error) {
-
     return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -358,9 +385,15 @@ exports.getMyChildren = async (req, res) => {
   try {
     const { email } = req.params;
 
- const children = await child.find({ email })
-  .populate("coach", "fullname email")
-  .populate("program", "title");
+    const children = await child.find({ email })
+      .populate({
+        path: "programAssignments.program",
+        select: "title",
+      })
+      .populate({
+        path: "programAssignments.coach",
+        select: "fullname email phone location",
+      })
 
     res.status(200).json({
       success: true,
@@ -381,11 +414,18 @@ exports.getCoachChildren = async (req, res) => {
 
     const { coachId } = req.params;
 
-    const children = await child.find({
-      coach: coachId,
-    })
-      .populate("coach", "fullname email phone")
-      .populate("program", "title");
+   const children = await child
+  .find({
+    "programAssignments.coach": coachId,
+  })
+  .populate({
+    path: "programAssignments.program",
+    select: "title",
+  })
+  .populate({
+    path: "programAssignments.coach",
+    select: "fullname email phone",
+  });
 
     res.status(200).json({
       success: true,

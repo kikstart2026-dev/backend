@@ -58,18 +58,21 @@ const childrenSchema = new mongoose.Schema(
     },
 
     // ✅ ADD
-    coach: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "KikstartUser",
-      default: null,
-    },
+    programAssignments: [
+      {
+        program: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Service",
+          required: true,
+        },
 
-    // ✅ ADD
-    program: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Service",
-      default: null,
-    },
+        coach: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "KikstartUser",
+          required: true,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );
