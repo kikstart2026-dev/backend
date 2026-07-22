@@ -27,6 +27,13 @@ router.get(
   authController.getCoachProfile
 );
 
+router.get(
+  "/coach/program/:id",
+  authMiddleware,
+  coachMiddleware,
+  authController.getCoachProgramDetails
+);
+
 router.put(
   "/coach/change-password",
   authMiddleware,

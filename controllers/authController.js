@@ -604,7 +604,7 @@ exports.googleAuth = async (req, res) => {
 
 exports.getCoachProfile = async (req, res) => {
   try {
-    const coach = await User.findById(req.user._id).select("-password");
+    const coach = await User.findById(req.user._id) .populate("programs").select("-password");
 
     if (!coach) {
       return res.status(404).json({
@@ -619,6 +619,44 @@ exports.getCoachProfile = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getCoachProgramDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const coach = await User.findById(req.user._id)
+      .populate("programs")
+      .select("-password");
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+    }
+
+    const program = coach.programs.find(
+      (item) => item._id.toString() === id
+    );
+
+    if (!program) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: program,
+    });
+  } catch (error) {
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
