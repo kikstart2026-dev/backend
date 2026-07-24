@@ -18,23 +18,27 @@ const userSchema = new mongoose.Schema(
 
     phone: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
     },
 
     location: {
       type: String,
-      required: true,
     },
 
     passcode: {
       type: String,
-      required: true,
     },
 
     password: {
       type: String,
       required: true,
+    },
+
+    // 🖼️ IMAGE FIELD ADD KORA HOLO
+    image: {
+      type: String, // image URL
+      default: null,
     },
 
     otp: {
@@ -52,11 +56,23 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "subadmin", "coach"],
       default: "user",
     },
+
+    dynamicRole: {
+      type: String,
+      default: null, // e.g. "manager", "editor"
+    },
+
+    programs: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("KikstartUser", userSchema);

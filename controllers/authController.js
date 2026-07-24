@@ -1,44 +1,37 @@
+const axios = require("axios");
+const { google } = require("googleapis");
+
 const User = require("../models/authModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { sendMail } = require("../middleware/sendMail");
+const {
+  sendMail,
+  emailTemplate,
+} = require("../middleware/sendMail");
 
 const jwtSecret = process.env.TOKEN_SECRET;
 
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "postmessage"
+);
+
 // ================= TOKEN =================
 const generateToken = (user) => {
-  return jwt.sign({ id: user._id, role: user.role }, jwtSecret, {
+  return jwt.sign({ id: user._id }, jwtSecret, {
     expiresIn: "7d",
   });
 };
 
-// ================= OTP GENERATOR =================
+// ================= OTP =================
 const generateOtp = () => {
-  const otp = Math.floor(100000 + Math.random() * 900000); //6 digit code
-  const expiry = Date.now() + 30 * 1000; //30 sec valid
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  const expiry = Date.now() + 90 * 1000;
   return { otp, expiry };
 };
 
-// ================= EMAIL TEMPLATE =================
-
-const emailTemplate = (title, content) => {
-  return `
-  <div style="font-family: Arial; background:#f4f6f9; padding:30px;">
-    <div style="max-width:600px; margin:auto; background:white; padding:30px; border-radius:12px;">
-      <h2 style="color:#4f46e5;">${title}</h2>
-      ${content}
-      <hr style="margin:30px 0"/>
-      <p style="font-size:14px; color:gray;">
-        Made with 💙 by Team KikStart
-      </p>
-    </div>
-  </div>
-  `;
-};
-
-// =================================================
-// ================= SIGNUP ========================
-// =================================================
+// ================= SIGNUP =================
 exports.signUp = async (req, res) => {
   try {
     const {
@@ -49,6 +42,7 @@ exports.signUp = async (req, res) => {
       passcode,
       password,
       confirmPass,
+      dynamicRole, // 🔥 new
     } = req.body;
 
     if (
@@ -67,129 +61,143 @@ exports.signUp = async (req, res) => {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    const normalizedEmail = email.trim().toLowerCase();
 
-    if (existingUser) {
-      return res.status(409).json({ message: "Email or phone already exists" });
-    }
+    const existingEmailUser = await User.findOne({ email: normalizedEmail });
+    const existingPhoneUser = await User.findOne({ phone });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const otpData = generateOtp();
+    const imagePath = req.file ? req.file.path : null;
 
+    if (
+      existingPhoneUser &&
+      (!existingEmailUser ||
+        existingPhoneUser._id.toString() !==
+        existingEmailUser._id.toString())
+    ) {
+      return res.status(400).json({
+        message: "Phone number already used",
+      });
+    }
+
+    // ===== EXISTING USER =====
+    if (existingEmailUser) {
+      if (existingEmailUser.isVerified === true) {
+        return res.status(400).json({
+          message: "User already exists. Please login.",
+        });
+      }
+
+      existingEmailUser.fullname = fullname;
+      existingEmailUser.phone = phone;
+      existingEmailUser.location = location;
+      existingEmailUser.passcode = passcode;
+      existingEmailUser.password = hashedPassword;
+      existingEmailUser.image = imagePath;
+      existingEmailUser.dynamicRole = dynamicRole || null;
+      existingEmailUser.otp = otpData.otp;
+      existingEmailUser.otpExpiry = otpData.expiry;
+
+      await existingEmailUser.save();
+
+      await sendMail(
+        normalizedEmail,
+        "Verify Account",
+        `<h1>${otpData.otp}</h1>`
+      );
+
+      return res.status(200).json({
+        message: "Account exists, please verify",
+      });
+    }
+
+    // ===== NEW USER =====
     await User.create({
       fullname,
-      email: email.trim().toLowerCase(),  // ✅ FIX
+      email: normalizedEmail,
       phone,
       location,
       passcode,
       password: hashedPassword,
+      image: imagePath,
       otp: otpData.otp,
       otpExpiry: otpData.expiry,
       isVerified: false,
+      role: "user",
+      dynamicRole: dynamicRole || null,
     });
 
     await sendMail(
-      email,
-      "🔐 Verify Your KikStart Account",
-      emailTemplate(
-        "Account Verification",
-        `<p>Hey <b>${fullname}</b>,</p>
-         <p>Your OTP is:</p>
-         <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
-      )
+      normalizedEmail,
+      "Verify Account",
+      `<h1>${otpData.otp}</h1>`
     );
 
-    res.status(201).json({
-      message: "Account created. OTP sent to email.",
+    return res.status(201).json({
+      message: "Account created. OTP sent",
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// =================================================
-// ================= OTP VERIFY ====================
-// =================================================
+// ================= OTP VERIFY =================
 exports.otpVerify = async (req, res) => {
   try {
     const { email, otp } = req.body;
 
-    const user = await User.findOne({ 
-      email: email.trim().toLowerCase() 
+    const user = await User.findOne({
+      email: email.trim().toLowerCase(),
     });
 
     if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    // 3️⃣ Check if already verified
     if (user.isVerified) {
       return res.status(400).json({
-        message: "Account already verified",
+        message: "Already verified",
       });
     }
 
-    // 4️⃣ Check OTP exists
-    if (!user.otp || !user.otpExpiry) {
-      return res.status(400).json({
-        message: "OTP not found. Please request a new one.",
-      });
-    }
-
-    // 5️⃣ Check expiry first
-    if (user.otpExpiry < Date.now()) {
+    if (!user.otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({
         message: "OTP expired",
       });
     }
 
-    // 6️⃣ Check OTP match
     if (user.otp !== Number(otp)) {
       return res.status(400).json({
         message: "Invalid OTP",
       });
     }
 
-    // 7️⃣ Update user
     user.isVerified = true;
     user.otp = undefined;
     user.otpExpiry = undefined;
 
     await user.save();
 
-    // ✅ GENERATE TOKEN HERE
     const token = generateToken(user);
 
-    await sendMail(
-      user.email,
-      "🎉 Welcome to KikStart!",
-      emailTemplate(
-        "You're Officially In 🚀",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>Your account has been successfully verified.</p>
-         <p>Welcome to KikStart 💙</p>`
-      )
-    );
-
-    // ✅ SEND TOKEN IN RESPONSE
-    res.status(200).json({ 
-      message: "Account verified successfully",
+    res.status(200).json({
+      message: "Verified",
       token,
       user: {
         id: user._id,
         fullname: user.fullname,
         email: user.email,
-        role: user.role
-      }
+        role: user.role,
+        dynamicRole: user.dynamicRole, // 🔥 important
+        location: user.location || null,
+        phone: user.phone || null,
+        passcode: user.passcode || null,
+        image: user.image || null
+      },
     });
-
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -232,14 +240,13 @@ exports.resendOtp = async (req, res) => {
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your new OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
-      )
+         <p>Valid for 90 sec ⏳</p>`,
+      ),
     );
 
     res.status(200).json({
       message: "New OTP sent successfully",
     });
-
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -252,7 +259,7 @@ exports.resendOtp = async (req, res) => {
 // =================================================
 exports.login = async (req, res) => {
   try {
-    const { email, phone, password } = req.body;
+    const { email, phone, password, role } = req.body;
 
     if (!password) {
       return res.status(400).json({ message: "Password is required" });
@@ -268,22 +275,33 @@ exports.login = async (req, res) => {
     // If phone is provided
     else if (phone) {
       user = await User.findOne({ phone: String(phone).trim() });
-    }
-
-    else {
+    } else {
       return res.status(400).json({
         message: "Email or phone is required",
       });
     }
 
-    if (!user)
-      return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.isVerified) {
-      return res.status(400).json({
-        message: "Account already verified",
+    // ✅ Coach login check
+    if (role === "coach" && user.role !== "coach") {
+      return res.status(403).json({
+        message: "Only coach can login from coach portal.",
       });
     }
+
+    if (role && user.role !== role) {
+      return res.status(403).json({
+        success: false,
+        message: `Only ${role} can login here.`,
+      });
+    }
+
+    // if (!user.isVerified) {
+    //   return res.status(400).json({
+    //     message: "Please verify your account first.",
+    //   });
+    // }
 
     const checkPassword = await bcrypt.compare(password, user.password);
 
@@ -306,8 +324,8 @@ exports.login = async (req, res) => {
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>Your Login OTP is:</p>
          <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-         <p>Valid for 30 sec ⏳</p>`
-      )
+         <p>Valid for 30 sec ⏳</p>`,
+      ),
     );
 
     res.status(200).json({
@@ -315,7 +333,6 @@ exports.login = async (req, res) => {
       requiresOtp: true,
       email: user.email,
     });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -333,7 +350,7 @@ exports.logout = async (req, res) => {
     }
 
     const user = await User.findOne({
-      email: email.trim().toLowerCase()
+      email: email.trim().toLowerCase(),
     });
 
     if (!user) {
@@ -354,12 +371,11 @@ exports.logout = async (req, res) => {
         "See You Again Soon 👋",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <p>You’ve successfully logged out.</p>
-         <p>Come back soon — something exciting is waiting 🚀</p>`
-      )
+         <p>Come back soon — something exciting is waiting 🚀</p>`,
+      ),
     );
 
     res.status(200).json({ message: "Logged out successfully!" });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -389,8 +405,8 @@ exports.forgotPassword = async (req, res) => {
         "Password Reset OTP",
         `<p>Hey <b>${user.fullname}</b>,</p>
          <h1>${otpData.otp}</h1>
-         <p>Valid for 30 seconds ⏳</p>`
-      )
+         <p>Valid for 90 seconds ⏳</p>`,
+      ),
     );
 
     res.status(200).json({ message: "OTP sent to email" });
@@ -413,7 +429,8 @@ exports.resetPassword = async (req, res) => {
     }
     if (password !== confirmpass) {
       return res.status(400).json({
-        message: "You should give your confirm pass as similar to your password !",
+        message:
+          "You should give your confirm pass as similar to your password !",
       });
     }
 
@@ -449,8 +466,8 @@ exports.resetPassword = async (req, res) => {
       emailTemplate(
         "You're All Set 🔐",
         `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>Your password has been successfully updated.</p>`
-      )
+         <p>Your password has been successfully updated.</p>`,
+      ),
     );
 
     res.status(200).json({
@@ -463,3 +480,231 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
+// =================================================
+// ============== GOOGLE SIGNUP / LOGIN ===========
+// =================================================
+exports.googleAuth = async (req, res) => {
+  try {
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        message: "Google code is required",
+      });
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const userRes = await axios.get(
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      },
+    );
+
+    // 🔥 GOOGLE IMAGE ADD
+    const { email, name, picture } = userRes.data;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Google email not found",
+      });
+    }
+
+    let user = await User.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!user) {
+      user = await User.create({
+        fullname: name,
+        email: email.trim().toLowerCase(),
+        password: "google-auth",
+        isVerified: true,
+        image: picture || null, // ✅ IMAGE SAVE
+      });
+
+      user.isVerified = true;
+      user.otp = undefined;
+      user.otpExpiry = undefined;
+
+      await user.save();
+
+      // ⭐ MAIL SEND SAFE CHECK
+      if (user.email) {
+        await sendMail(
+          user.email,
+          "🎉 Welcome to KikStart!",
+          emailTemplate(
+            "You're Officially In 🚀",
+            `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`,
+          ),
+        );
+      }
+    } else {
+      // ✅ ALWAYS UPDATE GOOGLE IMAGE
+      user.fullname = name || user.fullname;
+
+      user.image = picture || user.image || null;
+
+      await user.save();
+    }
+
+    const token = generateToken(user);
+
+    const populatedUser = await user.populate("role");
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+
+    await user.save();
+
+    // ⭐ MAIL SEND SAFE CHECK
+    if (user.email) {
+      await sendMail(
+        user.email,
+        "🎉 Welcome to KikStart!",
+        emailTemplate(
+          "You're Officially In 🚀",
+          `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`,
+        ),
+      );
+    }
+
+    return res.status(200).json({
+      message: "Google authentication successful",
+      token,
+      user: {
+        id: user._id,
+        fullname: user.fullname,
+        email: user.email,
+        role: populatedUser.role.name,
+        location: user.location || null,
+        phone: user.phone || null,
+        passcode: user.passcode || null,
+        image: user.image || null,// ✅ RETURN IMAGE
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Google authentication failed",
+      error: error.message,
+    });
+  }
+};
+
+
+exports.getCoachProfile = async (req, res) => {
+  try {
+    const coach = await User.findById(req.user._id) .populate("programs").select("-password");
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: coach,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getCoachProgramDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const coach = await User.findById(req.user._id)
+      .populate("programs")
+      .select("-password");
+
+    if (!coach) {
+      return res.status(404).json({
+        success: false,
+        message: "Coach not found",
+      });
+    }
+
+    const program = coach.programs.find(
+      (item) => item._id.toString() === id
+    );
+
+    if (!program) {
+      return res.status(404).json({
+        success: false,
+        message: "Program not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: program,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+exports.changeCoachPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword, confirmPassword } = req.body;
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    const coach = await User.findById(req.user._id);
+
+    const isMatch = await bcrypt.compare(oldPassword, coach.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Old password is incorrect",
+      });
+    }
+
+    coach.password = await bcrypt.hash(newPassword, 10);
+
+    await coach.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
