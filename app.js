@@ -87,7 +87,9 @@ app.use(
 
 
 
-
+app.get("/", (req, res) => {
+  res.send("Backend is running successfully 🚀");
+});
 // Routes
 
 app.use("/api/v1/admin", adminAuthRouter);
