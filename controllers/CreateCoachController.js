@@ -668,9 +668,6 @@ exports.exportCoachesCSV = async (req, res) => {
 exports.getCoachDashboard = async (req, res) => {
   try {
 
-    console.log("========== COACH DASHBOARD HIT ==========");
-
-console.log("REQ.USER =>", req.user);
 
     const coachId = req.user._id;
     console.log("COACH ID =>", coachId);
@@ -801,7 +798,7 @@ if(lastUpdatedProgram){
 
   } catch (error) {
 
-     console.log("COACH DASHBOARD ERROR =>", error);
+    //  console.log("COACH DASHBOARD ERROR =>", error);
 
     res.status(500).json({
       success: false,
