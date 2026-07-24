@@ -232,17 +232,17 @@ exports.resendOtp = async (req, res) => {
     await user.save();
 
     // Send Mail
-    // await sendMail(
-    //   user.email,
-    //   "🔐 Verify Your KikStart Account",
-    //   emailTemplate(
-    //     "Account Verification",
-    //     `<p>Hey <b>${user.fullname}</b>,</p>
-    //      <p>Your new OTP is:</p>
-    //      <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-    //      <p>Valid for 90 sec ⏳</p>`,
-    //   ),
-    // );
+    await sendMail(
+      user.email,
+      "🔐 Verify Your KikStart Account",
+      emailTemplate(
+        "Account Verification",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>Your new OTP is:</p>
+         <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
+         <p>Valid for 90 sec ⏳</p>`,
+      ),
+    );
 
     res.status(200).json({
       message: "New OTP sent successfully",
@@ -316,17 +316,17 @@ exports.login = async (req, res) => {
     await user.save();
 
     // 🔥 Send OTP Mail
-    // await sendMail(
-    //   user.email,
-    //   "🔐 Login OTP - KikStart",
-    //   emailTemplate(
-    //     "Login Verification",
-    //     `<p>Hey <b>${user.fullname}</b>,</p>
-    //      <p>Your Login OTP is:</p>
-    //      <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
-    //      <p>Valid for 30 sec ⏳</p>`,
-    //   ),
-    // );
+    await sendMail(
+      user.email,
+      "🔐 Login OTP - KikStart",
+      emailTemplate(
+        "Login Verification",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>Your Login OTP is:</p>
+         <h1 style="letter-spacing:4px;">${otpData.otp}</h1>
+         <p>Valid for 30 sec ⏳</p>`,
+      ),
+    );
 
     res.status(200).json({
       message: "Login OTP sent to your email",
@@ -364,16 +364,16 @@ exports.logout = async (req, res) => {
 
     await user.save();
 
-    // await sendMail(
-    //   user.email,
-    //   "We’ll Miss You Already 💛 | KikStart",
-    //   emailTemplate(
-    //     "See You Again Soon 👋",
-    //     `<p>Hey <b>${user.fullname}</b>,</p>
-    //      <p>You’ve successfully logged out.</p>
-    //      <p>Come back soon — something exciting is waiting 🚀</p>`,
-    //   ),
-    // );
+    await sendMail(
+      user.email,
+      "We’ll Miss You Already 💛 | KikStart",
+      emailTemplate(
+        "See You Again Soon 👋",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>You’ve successfully logged out.</p>
+         <p>Come back soon — something exciting is waiting 🚀</p>`,
+      ),
+    );
 
     res.status(200).json({ message: "Logged out successfully!" });
   } catch (error) {
@@ -398,16 +398,16 @@ exports.forgotPassword = async (req, res) => {
     user.otpExpiry = otpData.expiry;
     await user.save();
 
-    // await sendMail(
-    //   user.email,
-    //   "🔐 Reset Your KikStart Password",
-    //   emailTemplate(
-    //     "Password Reset OTP",
-    //     `<p>Hey <b>${user.fullname}</b>,</p>
-    //      <h1>${otpData.otp}</h1>
-    //      <p>Valid for 90 seconds ⏳</p>`,
-    //   ),
-    // );
+    await sendMail(
+      user.email,
+      "🔐 Reset Your KikStart Password",
+      emailTemplate(
+        "Password Reset OTP",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <h1>${otpData.otp}</h1>
+         <p>Valid for 90 seconds ⏳</p>`,
+      ),
+    );
 
     res.status(200).json({ message: "OTP sent to email" });
   } catch (error) {
@@ -460,15 +460,15 @@ exports.resetPassword = async (req, res) => {
 
     await user.save();
 
-    // await sendMail(
-    //   user.email,
-    //   "✅ Password Changed Successfully",
-    //   emailTemplate(
-    //     "You're All Set 🔐",
-    //     `<p>Hey <b>${user.fullname}</b>,</p>
-    //      <p>Your password has been successfully updated.</p>`,
-    //   ),
-    // );
+    await sendMail(
+      user.email,
+      "✅ Password Changed Successfully",
+      emailTemplate(
+        "You're All Set 🔐",
+        `<p>Hey <b>${user.fullname}</b>,</p>
+         <p>Your password has been successfully updated.</p>`,
+      ),
+    );
 
     res.status(200).json({
       message: "Password reset successful",
@@ -534,18 +534,18 @@ exports.googleAuth = async (req, res) => {
       await user.save();
 
       // ⭐ MAIL SEND SAFE CHECK
-      // if (user.email) {
-      //   await sendMail(
-      //     user.email,
-      //     "🎉 Welcome to KikStart!",
-      //     emailTemplate(
-      //       "You're Officially In 🚀",
-      //       `<p>Hey <b>${user.fullname}</b>,</p>
-      //      <p>Your Google account login successful.</p>
-      //      <p>Welcome to KikStart 💙</p>`,
-      //     ),
-      //   );
-      // }
+      if (user.email) {
+        await sendMail(
+          user.email,
+          "🎉 Welcome to KikStart!",
+          emailTemplate(
+            "You're Officially In 🚀",
+            `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`,
+          ),
+        );
+      }
     } else {
       // ✅ ALWAYS UPDATE GOOGLE IMAGE
       user.fullname = name || user.fullname;
@@ -566,18 +566,18 @@ exports.googleAuth = async (req, res) => {
     await user.save();
 
     // ⭐ MAIL SEND SAFE CHECK
-    // if (user.email) {
-    //   await sendMail(
-    //     user.email,
-    //     "🎉 Welcome to KikStart!",
-    //     emailTemplate(
-    //       "You're Officially In 🚀",
-    //       `<p>Hey <b>${user.fullname}</b>,</p>
-    //        <p>Your Google account login successful.</p>
-    //        <p>Welcome to KikStart 💙</p>`,
-    //     ),
-    //   );
-    // }
+    if (user.email) {
+      await sendMail(
+        user.email,
+        "🎉 Welcome to KikStart!",
+        emailTemplate(
+          "You're Officially In 🚀",
+          `<p>Hey <b>${user.fullname}</b>,</p>
+           <p>Your Google account login successful.</p>
+           <p>Welcome to KikStart 💙</p>`,
+        ),
+      );
+    }
 
     return res.status(200).json({
       message: "Google authentication successful",
