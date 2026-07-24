@@ -1,25 +1,14 @@
 const nodemailer = require("nodemailer");
 
 const sendMail = async (to, subject, html) => {
-  console.log("📧 sendMail called");
-
   try {
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
+      service: "gmail",
       auth: {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASS,
       },
-      requireTLS: true,
-      family: 4, // IPv4 force
     });
-
-    console.log("📧 transporter created");
-
-    await transporter.verify();
-    console.log("✅ SMTP Connected");
 
     await transporter.sendMail({
       from: process.env.EMAIL,
@@ -28,11 +17,11 @@ const sendMail = async (to, subject, html) => {
       html,
     });
 
-    console.log("✅ Mail sent");
-  } catch (err) {
-    console.error("❌ Mail Error:", err);
+    console.log("Mail sent");
+  } catch (error) {
+    console.log(error);
   }
-}
+};
 
 const emailTemplate = (title, body) => {
   return `
