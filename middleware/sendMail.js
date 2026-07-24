@@ -12,6 +12,8 @@ const sendMail = async (to, subject, html) => {
         user: process.env.EMAIL,
         pass: process.env.EMAIL_PASS,
       },
+      requireTLS: true,
+      family: 4, // IPv4 force
     });
 
     console.log("📧 transporter created");
