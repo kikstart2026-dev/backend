@@ -18,4 +18,6 @@ mongoose
 
 app.listen(port, () => {
   console.log(`✅ App is running at http://localhost:${port} ...`);
+  console.log("EMAIL =", process.env.EMAIL);
+  console.log("EMAIL_PASS =", process.env.EMAIL_PASS ? "YES" : "NO");
 });

@@ -12,13 +12,12 @@ const sendMail = async (to, subject, html) => {
       },
     });
 
-    transporter.verify((err, success) => {
-      if (err) {
-        console.log("SMTP Verify Error:", err);
-      } else {
-        console.log("SMTP Server Ready");
-      }
-    });
+    try {
+      await transporter.verify();
+      console.log("✅ SMTP Connected");
+    } catch (err) {
+      console.log("❌ SMTP Verify Error:", err);
+    }
     await transporter.sendMail({
       from: process.env.EMAIL,
       to,
