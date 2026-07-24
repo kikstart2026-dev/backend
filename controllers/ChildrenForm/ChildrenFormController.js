@@ -41,9 +41,11 @@ exports.createChild = async (req, res) => {
     }
 
     // ✅ IMAGE PATH FROM MULTER
-    const profileImage = req.file
-      ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
-      : "";
+   const profileImage = req.file
+  ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(
+      req.file.destination
+    )}/${req.file.filename}`
+  : "";
 
     // ================= REQUIRED FIELD CHECK =================
 
@@ -158,54 +160,294 @@ exports.createChild = async (req, res) => {
 };
 
 
+// exports.getAllChild = async (req, res) => {
+//   try {
+//     const page =
+//       Number(req.query.page) || 1;
+
+//     const limit = 5;
+
+//     const skip =
+//       (page - 1) * limit;
+
+//     const totalChildren =
+//       await child.countDocuments();
+
+//     const data = await child.find()
+//       .populate({
+//         path: "programAssignments.program",
+//         select: "title",
+//       })
+//       .populate({
+//         path: "programAssignments.coach",
+//         select: "fullname email phone location",
+//       })
+//       .sort({
+//         createdAt: -1,
+//       })
+//       .skip(skip)
+//       .limit(limit);
+
+//     return res.status(200).json({
+//       success: true,
+//       currentPage: page,
+//       totalPages: Math.ceil(
+//         totalChildren / limit
+//       ),
+//       totalChildren,
+//       results: data.length,
+//       data,
+//     });
+
+//   } catch (error) {
+
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+
+//   }
+// };
+
 exports.getAllChild = async (req, res) => {
   try {
-    const page =
-      Number(req.query.page) || 1;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    const limit = 5;
+    const {
+      search = "",
+      sortBy = "createdAt",
+      order = "desc",
+      foodHabit,
+      allergy,
+      prolongDisease,
+      minAge,
+      maxAge,
+      coach,
+      program,
+    } = req.query;
 
-    const skip =
-      (page - 1) * limit;
+    const query = {};
 
-    const totalChildren =
-      await child.countDocuments();
+    // ===========================
+    // SEARCH
+    // ===========================
 
-    const data = await child.find()
-      .populate({
-        path: "programAssignments.program",
-        select: "title",
-      })
-      .populate({
-        path: "programAssignments.coach",
-        select: "fullname email phone location",
-      })
-      .sort({
-        createdAt: -1,
-      })
-      .skip(skip)
-      .limit(limit);
+    if (search) {
+      query.$or = [
+        {
+          fullName: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          email: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          location: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+      ];
+    }
+
+    // ===========================
+    // FOOD HABIT
+    // ===========================
+
+    if (foodHabit) {
+      query.foodHabit = foodHabit;
+    }
+
+    // ===========================
+    // ALLERGY
+    // ===========================
+
+    if (
+      allergy !== undefined &&
+      allergy !== ""
+    ) {
+      query.allergy = allergy === "true";
+    }
+
+    // ===========================
+    // PROLONG DISEASE
+    // ===========================
+
+    if (
+      prolongDisease &&
+      prolongDisease !== ""
+    ) {
+      query.prolongDisease = prolongDisease;
+    }
+
+    // ===========================
+    // AGE FILTER
+    // ===========================
+
+    if (minAge || maxAge) {
+      query.age = {};
+
+      if (minAge) {
+        query.age.$gte = Number(minAge);
+      }
+
+      if (maxAge) {
+        query.age.$lte = Number(maxAge);
+      }
+    }
+
+    // ===========================
+    // PROGRAM FILTER
+    // ===========================
+
+    if (program) {
+      query["programAssignments.program"] = program;
+    }
+
+    // ===========================
+    // COACH FILTER
+    // ===========================
+
+    if (coach) {
+      query["programAssignments.coach"] = coach;
+    }
+
+    // ===========================
+    // SORT
+    // ===========================
+
+    const sortObject = {};
+
+    sortObject[sortBy] =
+      order === "asc" ? 1 : -1;
+          // ===========================
+    // TOTAL CHILDREN
+    // ===========================
+
+    const totalChildren = await child.countDocuments(query);
+
+    // ===========================
+    // FETCH DATA
+    // ===========================
+
+    // let children = await child
+    //   .find(query)
+    //   .populate({
+    //     path: "programAssignments.program",
+    //     select: "title image",
+    //   })
+    //   .populate({
+    //     path: "programAssignments.coach",
+    //     select: "fullname email phone location",
+    //   })
+    //   .sort(sortObject)
+    //   .skip(skip)
+    //   .limit(limit);
+
+    let children = await child
+  .find(query)
+  .populate({
+    path: "programAssignments.program",
+    select: "title image",
+  })
+  .populate({
+    path: "programAssignments.coach",
+    select: "fullname email phone location",
+  })
+  .sort(sortObject)
+  .skip(skip)
+  .limit(limit);
+
+// ===========================
+// PROFILE IMAGE FULL URL
+// ===========================
+
+children = children.map((item) => {
+  const childObj = item.toObject();
+
+  if (childObj.profileImage) {
+    childObj.profileImage = childObj.profileImage.startsWith("http")
+      ? childObj.profileImage
+      : `${req.protocol}://${req.get("host")}${childObj.profileImage}`;
+  }
+
+  return childObj;
+});
+
+
+
+    // ==========================================
+    // SEARCH INSIDE POPULATED PROGRAM / COACH
+    // ==========================================
+
+    if (search) {
+      const keyword = search.toLowerCase();
+
+      children = children.filter((item) => {
+        const programMatch = item.programAssignments.some(
+          (assignment) =>
+            assignment.program?.title
+              ?.toLowerCase()
+              .includes(keyword)
+        );
+
+        const coachMatch = item.programAssignments.some(
+          (assignment) =>
+            assignment.coach?.fullname
+              ?.toLowerCase()
+              .includes(keyword)
+        );
+
+        return (
+          item.fullName
+            ?.toLowerCase()
+            .includes(keyword) ||
+          item.email
+            ?.toLowerCase()
+            .includes(keyword) ||
+          item.location
+            ?.toLowerCase()
+            .includes(keyword) ||
+          programMatch ||
+          coachMatch
+        );
+      });
+    }
+
+    // ===========================
+    // RESPONSE
+    // ===========================
 
     return res.status(200).json({
       success: true,
+
       currentPage: page,
+
       totalPages: Math.ceil(
         totalChildren / limit
       ),
+
       totalChildren,
-      results: data.length,
-      data,
+
+      results: children.length,
+
+      data: children,
     });
-
   } catch (error) {
-
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
+
 
 
 
@@ -289,9 +531,11 @@ exports.updateChild = async (req, res) => {
 
 
 
-    const imagePath = req.file
-      ? `/uploads/${path.basename(req.file.destination)}/${req.file.filename}`
-      : existingChild.profileImage;
+const imagePath = req.file
+  ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(
+      req.file.destination
+    )}/${req.file.filename}`
+  : existingChild.profileImage;
 
 
 
