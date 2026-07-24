@@ -1,6 +1,11 @@
 const axios = require("axios");
 
 const sendMail = async (to, subject, html) => {
+
+  console.log(
+    "BREVO KEY:",
+    process.env.BREVO_API_KEY
+  );
   try {
     await axios.post(
       "https://api.brevo.com/v3/smtp/email",
