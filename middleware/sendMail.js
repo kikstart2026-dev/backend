@@ -1,6 +1,8 @@
 const nodemailer = require("nodemailer");
 
 const sendMail = async (to, subject, html) => {
+  console.log("📧 sendMail called");
+
   try {
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
@@ -12,12 +14,11 @@ const sendMail = async (to, subject, html) => {
       },
     });
 
-    try {
-      await transporter.verify();
-      console.log("✅ SMTP Connected");
-    } catch (err) {
-      console.log("❌ SMTP Verify Error:", err);
-    }
+    console.log("📧 transporter created");
+
+    await transporter.verify();
+    console.log("✅ SMTP Connected");
+
     await transporter.sendMail({
       from: process.env.EMAIL,
       to,
@@ -25,11 +26,11 @@ const sendMail = async (to, subject, html) => {
       html,
     });
 
-    console.log("Mail sent");
-  } catch (error) {
-    console.log(error);
+    console.log("✅ Mail sent");
+  } catch (err) {
+    console.error("❌ Mail Error:", err);
   }
-};
+}
 
 const emailTemplate = (title, body) => {
   return `
