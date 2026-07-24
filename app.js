@@ -77,6 +77,14 @@ app.use(
 );
 
 app.use(express.json());
+
+
+// 👇 এটা যোগ করো
+app.get("/", (req, res) => {
+  res.send("Backend is running successfully 🚀");
+});
+
+
 app.use(cookieParser());
 
 // 🔥 Static Upload Folder
@@ -87,9 +95,6 @@ app.use(
 
 
 
-app.get("/", (req, res) => {
-  res.send("Backend is running successfully 🚀");
-});
 // Routes
 
 app.use("/api/v1/admin", adminAuthRouter);
