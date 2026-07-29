@@ -4,7 +4,7 @@ const { google } = require("googleapis");
 const User = require("../models/authModel");
 const UpdateRequest = require("../models/updateRequestModel");
 const crypto = require("crypto");
-const { sendMail } = require("../middleware/sendMail");
+// const { sendMail } = require("../middleware/sendMail");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -32,16 +32,16 @@ const generateOtp = () => {
 };
 
 // ================= EMAIL TEMPLATE =================
-const emailTemplate = (title, content) => {
-  return `
-  <div style="font-family: Arial; padding:20px;">
-    <h2>${title}</h2>
-    ${content}
-    <hr/>
-    <p>KikStart 💙</p>
-  </div>
-  `;
-};
+// const emailTemplate = (title, content) => {
+//   return `
+//   <div style="font-family: Arial; padding:20px;">
+//     <h2>${title}</h2>
+//     ${content}
+//     <hr/>
+//     <p>KikStart 💙</p>
+//   </div>
+//   `;
+// };
 
 
 
@@ -73,20 +73,26 @@ exports.adminLogin = async (req, res) => {
     user.otpExpiry = otpData.expiry;
     await user.save();
 
-    await sendMail(
-      user.email,
-      "🔐 Admin Login OTP",
-      emailTemplate(
-        "Admin Login Verification",
-        `<h1>${otpData.otp}</h1><p>Valid for 90 sec</p>`
-      )
-    );
+    // await sendMail(
+    //   user.email,
+    //   "🔐 Admin Login OTP",
+    //   emailTemplate(
+    //     "Admin Login Verification",
+    //     `<h1>${otpData.otp}</h1><p>Valid for 90 sec</p>`
+    //   )
+    // );
+
+    // res.status(200).json({
+    //   message: "OTP sent to admin email",
+    //   email: user.email,
+    // });
 
     res.status(200).json({
       message: "OTP sent to admin email",
       email: user.email,
+      otp: otpData.otp, // ✅ Demo purpose
     });
-    
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -151,15 +157,15 @@ exports.adminGoogleAuth = async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    await sendMail(
-      user.email,
-      "Admin Login via Google",
-      emailTemplate(
-        "Admin Login Successful",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You logged in via Google successfully.</p>`
-      )
-    );
+    // await sendMail(
+    //   user.email,
+    //   "Admin Login via Google",
+    //   emailTemplate(
+    //     "Admin Login Successful",
+    //     `<p>Hey <b>${user.fullname}</b>,</p>
+    //      <p>You logged in via Google successfully.</p>`
+    //   )
+    // );
 
     res.status(200).json({
       message: "Admin Google login successful",
@@ -265,17 +271,22 @@ exports.adminResendOtp = async (req, res) => {
     user.otpExpiry = otpData.expiry;
     await user.save();
 
-    await sendMail(
-      user.email,
-      "🔐 Resend OTP",
-      emailTemplate(
-        "New OTP",
-        `<h1>${otpData.otp}</h1><p>Valid for 90 sec</p>`
-      )
-    );
+    // await sendMail(
+    //   user.email,
+    //   "🔐 Resend OTP",
+    //   emailTemplate(
+    //     "New OTP",
+    //     `<h1>${otpData.otp}</h1><p>Valid for 90 sec</p>`
+    //   )
+    // );
+
+    // res.status(200).json({
+    //   message: "OTP resent successfully",
+    // });
 
     res.status(200).json({
       message: "OTP resent successfully",
+      otp: otpData.otp, // ✅ Demo purpose
     });
 
   } catch (error) {
@@ -307,18 +318,23 @@ exports.adminForgotPassword = async (req, res) => {
     user.otpExpiry = otpData.expiry;
     await user.save();
 
-    await sendMail(
-      user.email,
-      "🔐 Reset Password OTP",
-      emailTemplate(
-        "Reset Password",
-        `<h1>${otpData.otp}</h1>`
-      )
-    );
+    // await sendMail(
+    //   user.email,
+    //   "🔐 Reset Password OTP",
+    //   emailTemplate(
+    //     "Reset Password",
+    //     `<h1>${otpData.otp}</h1>`
+    //   )
+    // );
+
+    // res.status(200).json({
+    //   message: "OTP sent to email",
+    // });
 
     res.status(200).json({
-      message: "OTP sent to email",
-    });
+  message: "OTP sent to email",
+  otp: otpData.otp, // ✅ Demo purpose
+});
 
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -368,7 +384,7 @@ exports.adminResetPassword = async (req, res) => {
     res.status(200).json({
       message: "Password reset successful",
     });
-    
+
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -401,16 +417,16 @@ exports.adminLogout = async (req, res) => {
 
     await user.save();
 
-    await sendMail(
-      user.email,
-      "We’ll Miss You Already 💛 | KikStart",
-      emailTemplate(
-        "See You Again Soon 👋",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You’ve successfully logged out.</p>
-         <p>Come back soon — something exciting is waiting 🚀</p>`,
-      ),
-    );
+    // await sendMail(
+    //   user.email,
+    //   "We’ll Miss You Already 💛 | KikStart",
+    //   emailTemplate(
+    //     "See You Again Soon 👋",
+    //     `<p>Hey <b>${user.fullname}</b>,</p>
+    //      <p>You’ve successfully logged out.</p>
+    //      <p>Come back soon — something exciting is waiting 🚀</p>`,
+    //   ),
+    // );
 
     res.status(200).json({ message: "Logged out successfully!" });
   } catch (error) {
@@ -445,15 +461,15 @@ exports.requestUpdateUser = async (req, res) => {
     const approveLink = `http://localhost:3000/approve/${token}`;
     const rejectLink = `http://localhost:3000/reject/${token}`;
 
-    await sendMail(
-      user.email,
-      "Approve Profile Update Request",
-      `
-        <h2>Profile Update Request</h2>
-        <a href="${approveLink}">✅ Approve</a><br/>
-        <a href="${rejectLink}">❌ Reject</a>
-      `
-    );
+    // await sendMail(
+    //   user.email,
+    //   "Approve Profile Update Request",
+    //   `
+    //     <h2>Profile Update Request</h2>
+    //     <a href="${approveLink}">✅ Approve</a><br/>
+    //     <a href="${rejectLink}">❌ Reject</a>
+    //   `
+    // );
 
     res.status(200).json({
       message: "Update request sent to user",
