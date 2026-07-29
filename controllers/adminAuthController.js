@@ -157,15 +157,15 @@ exports.adminGoogleAuth = async (req, res) => {
     user.isVerified = true;
     await user.save();
 
-    await sendMail(
-      user.email,
-      "Admin Login via Google",
-      emailTemplate(
-        "Admin Login Successful",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You logged in via Google successfully.</p>`
-      )
-    );
+    // await sendMail(
+    //   user.email,
+    //   "Admin Login via Google",
+    //   emailTemplate(
+    //     "Admin Login Successful",
+    //     `<p>Hey <b>${user.fullname}</b>,</p>
+    //      <p>You logged in via Google successfully.</p>`
+    //   )
+    // );
 
     res.status(200).json({
       message: "Admin Google login successful",
@@ -417,16 +417,16 @@ exports.adminLogout = async (req, res) => {
 
     await user.save();
 
-    await sendMail(
-      user.email,
-      "We’ll Miss You Already 💛 | KikStart",
-      emailTemplate(
-        "See You Again Soon 👋",
-        `<p>Hey <b>${user.fullname}</b>,</p>
-         <p>You’ve successfully logged out.</p>
-         <p>Come back soon — something exciting is waiting 🚀</p>`,
-      ),
-    );
+    // await sendMail(
+    //   user.email,
+    //   "We’ll Miss You Already 💛 | KikStart",
+    //   emailTemplate(
+    //     "See You Again Soon 👋",
+    //     `<p>Hey <b>${user.fullname}</b>,</p>
+    //      <p>You’ve successfully logged out.</p>
+    //      <p>Come back soon — something exciting is waiting 🚀</p>`,
+    //   ),
+    // );
 
     res.status(200).json({ message: "Logged out successfully!" });
   } catch (error) {
@@ -461,15 +461,15 @@ exports.requestUpdateUser = async (req, res) => {
     const approveLink = `http://localhost:3000/approve/${token}`;
     const rejectLink = `http://localhost:3000/reject/${token}`;
 
-    await sendMail(
-      user.email,
-      "Approve Profile Update Request",
-      `
-        <h2>Profile Update Request</h2>
-        <a href="${approveLink}">✅ Approve</a><br/>
-        <a href="${rejectLink}">❌ Reject</a>
-      `
-    );
+    // await sendMail(
+    //   user.email,
+    //   "Approve Profile Update Request",
+    //   `
+    //     <h2>Profile Update Request</h2>
+    //     <a href="${approveLink}">✅ Approve</a><br/>
+    //     <a href="${rejectLink}">❌ Reject</a>
+    //   `
+    // );
 
     res.status(200).json({
       message: "Update request sent to user",
