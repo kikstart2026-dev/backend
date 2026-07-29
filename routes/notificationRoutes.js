@@ -29,4 +29,8 @@ router.put(
   markAllAsRead
 ); 
 
+router.delete("/delete/:id", deleteNotification);
+
+router.delete("/clear/:coachId", clearNotifications);
+
 module.exports = router;
