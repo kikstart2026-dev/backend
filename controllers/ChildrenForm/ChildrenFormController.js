@@ -41,11 +41,11 @@ exports.createChild = async (req, res) => {
     }
 
     // ✅ IMAGE PATH FROM MULTER
-   const profileImage = req.file
-  ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(
-      req.file.destination
-    )}/${req.file.filename}`
-  : "";
+    const profileImage = req.file
+      ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(
+        req.file.destination
+      )}/${req.file.filename}`
+      : "";
 
     // ================= REQUIRED FIELD CHECK =================
 
@@ -147,7 +147,10 @@ exports.createChild = async (req, res) => {
       data: newChild,
       remainingChildren:
         allowedChildren - (totalChildren + 1),
+        
     });
+
+   
 
   } catch (error) {
 
@@ -327,7 +330,7 @@ exports.getAllChild = async (req, res) => {
 
     sortObject[sortBy] =
       order === "asc" ? 1 : -1;
-          // ===========================
+    // ===========================
     // TOTAL CHILDREN
     // ===========================
 
@@ -352,34 +355,34 @@ exports.getAllChild = async (req, res) => {
     //   .limit(limit);
 
     let children = await child
-  .find(query)
-  .populate({
-    path: "programAssignments.program",
-    select: "title image",
-  })
-  .populate({
-    path: "programAssignments.coach",
-    select: "fullname email phone location",
-  })
-  .sort(sortObject)
-  .skip(skip)
-  .limit(limit);
+      .find(query)
+      .populate({
+        path: "programAssignments.program",
+        select: "title image",
+      })
+      .populate({
+        path: "programAssignments.coach",
+        select: "fullname email phone location",
+      })
+      .sort(sortObject)
+      .skip(skip)
+      .limit(limit);
 
-// ===========================
-// PROFILE IMAGE FULL URL
-// ===========================
+    // ===========================
+    // PROFILE IMAGE FULL URL
+    // ===========================
 
-children = children.map((item) => {
-  const childObj = item.toObject();
+    children = children.map((item) => {
+      const childObj = item.toObject();
 
-  if (childObj.profileImage) {
-    childObj.profileImage = childObj.profileImage.startsWith("http")
-      ? childObj.profileImage
-      : `${req.protocol}://${req.get("host")}${childObj.profileImage}`;
-  }
+      if (childObj.profileImage) {
+        childObj.profileImage = childObj.profileImage.startsWith("http")
+          ? childObj.profileImage
+          : `${req.protocol}://${req.get("host")}${childObj.profileImage}`;
+      }
 
-  return childObj;
-});
+      return childObj;
+    });
 
 
 
@@ -424,9 +427,9 @@ children = children.map((item) => {
     // ===========================
     // RESPONSE
     // ===========================
-console.log("Query:", query);
-console.log("Total Children:", totalChildren);
-console.log("Returned:", children.length);
+    console.log("Query:", query);
+    console.log("Total Children:", totalChildren);
+    console.log("Returned:", children.length);
     return res.status(200).json({
       success: true,
 
@@ -533,11 +536,11 @@ exports.updateChild = async (req, res) => {
 
 
 
-const imagePath = req.file
-  ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(
-      req.file.destination
-    )}/${req.file.filename}`
-  : existingChild.profileImage;
+    const imagePath = req.file
+      ? `${req.protocol}://${req.get("host")}/uploads/${path.basename(
+        req.file.destination
+      )}/${req.file.filename}`
+      : existingChild.profileImage;
 
 
 
@@ -546,43 +549,43 @@ const imagePath = req.file
 
 
 
-   if(programAssignments){
+    if (programAssignments) {
 
-  const newAssignments = JSON.parse(programAssignments);
-
-
-  assignments = newAssignments.map(item=>{
+      const newAssignments = JSON.parse(programAssignments);
 
 
-    const oldAssignment =
-      existingChild.programAssignments.find(
-        old =>
-          old.program.toString() === item.program.toString() &&
-          old.coach.toString() === item.coach.toString()
-      );
+      assignments = newAssignments.map(item => {
+
+
+        const oldAssignment =
+          existingChild.programAssignments.find(
+            old =>
+              old.program.toString() === item.program.toString() &&
+              old.coach.toString() === item.coach.toString()
+          );
 
 
 
-    return {
+        return {
 
-      program:item.program,
+          program: item.program,
 
-      coach:item.coach,
-
-
-      // old program হলে old time
-      // new program হলে new time
-
-      assignedAt:
-        oldAssignment?.assignedAt || new Date()
-
-    };
+          coach: item.coach,
 
 
-  });
+          // old program হলে old time
+          // new program হলে new time
+
+          assignedAt:
+            oldAssignment?.assignedAt || new Date()
+
+        };
 
 
-}
+      });
+
+
+    }
 
 
 
