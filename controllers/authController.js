@@ -109,6 +109,7 @@ exports.signUp = async (req, res) => {
 
       return res.status(200).json({
         message: "Account exists, please verify",
+        otp: otpData.otp,
       });
     }
 
@@ -135,7 +136,8 @@ exports.signUp = async (req, res) => {
     // );
 
     return res.status(201).json({
-      message: "Account created. OTP sent",
+      message: "Account created successfully",
+      otp: otpData.otp, // demo purpose
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -245,8 +247,10 @@ exports.resendOtp = async (req, res) => {
     // );
 
     res.status(200).json({
-      message: "New OTP sent successfully",
+      message: "New OTP generated successfully",
+      otp: otpData.otp,
     });
+
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -329,9 +333,10 @@ exports.login = async (req, res) => {
     // );
 
     res.status(200).json({
-      message: "Login OTP sent to your email",
+      message: "Login OTP generated",
       requiresOtp: true,
       email: user.email,
+      otp: otpData.otp, // demo only
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -409,7 +414,10 @@ exports.forgotPassword = async (req, res) => {
     //   ),
     // );
 
-    res.status(200).json({ message: "OTP sent to email" });
+    res.status(200).json({
+      message: "OTP generated",
+      otp: otpData.otp,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -604,7 +612,7 @@ exports.googleAuth = async (req, res) => {
 
 exports.getCoachProfile = async (req, res) => {
   try {
-    const coach = await User.findById(req.user._id) .populate("programs").select("-password");
+    const coach = await User.findById(req.user._id).populate("programs").select("-password");
 
     if (!coach) {
       return res.status(404).json({

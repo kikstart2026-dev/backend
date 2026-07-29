@@ -1,7 +1,7 @@
 const User = require("../models/authModel");
 const Program = require("../models/Service/ServiceModel");
-const bcrypt = require("bcryptjs");
-const { sendMail } = require("../middleware/sendMail");
+// const bcrypt = require("bcryptjs");
+// const { sendMail } = require("../middleware/sendMail");
 const exportCSV = require("../utils/exportCSV");
 const Notification = require("../models/notificationModel");
 const Child = require("../models/ChildrenForm/ChildrenFormModel");
@@ -10,43 +10,43 @@ const Child = require("../models/ChildrenForm/ChildrenFormModel");
 // Generate Random Password
 // =========================
 
-const generatePassword = (length = 10) => {
-  const chars =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+// const generatePassword = (length = 10) => {
+//   const chars =
+//     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-  let password = "";
+//   let password = "";
 
-  for (let i = 0; i < length; i++) {
-    password += chars.charAt(
-      Math.floor(Math.random() * chars.length)
-    );
-  }
+//   for (let i = 0; i < length; i++) {
+//     password += chars.charAt(
+//       Math.floor(Math.random() * chars.length)
+//     );
+//   }
 
-  return password;
-};
+//   return password;
+// };
 
 // =========================
 // Email Template
 // =========================
 
-const emailTemplate = (title, content) => {
-  return `
-  <div style="font-family:Arial;background:#f4f6f9;padding:30px;">
-    <div style="max-width:600px;margin:auto;background:#fff;padding:30px;border-radius:12px;">
-      <h2 style="color:#4f46e5;">${title}</h2>
+// const emailTemplate = (title, content) => {
+//   return `
+//   <div style="font-family:Arial;background:#f4f6f9;padding:30px;">
+//     <div style="max-width:600px;margin:auto;background:#fff;padding:30px;border-radius:12px;">
+//       <h2 style="color:#4f46e5;">${title}</h2>
 
-      ${content}
+//       ${content}
 
-      <hr style="margin:30px 0"/>
+//       <hr style="margin:30px 0"/>
 
-      <p style="font-size:14px;color:gray;">
-        Made with 💙 by Team KikStart
-      </p>
+//       <p style="font-size:14px;color:gray;">
+//         Made with 💙 by Team KikStart
+//       </p>
 
-    </div>
-  </div>
-  `;
-};
+//     </div>
+//   </div>
+//   `;
+// };
 
 // ======================================================
 // CREATE COACH
@@ -97,64 +97,52 @@ exports.createCoach = async (req, res) => {
       });
     }
 
-    // Password Generate
+    // // Password Generate
 
-    const password =
-      generatePassword(10);
+    // const password =
+    //   generatePassword(10);
 
-    const hashedPassword =
-      await bcrypt.hash(password, 10);
+    // const hashedPassword =
+    //   await bcrypt.hash(password, 10);
 
     // Create Coach
 
-    const coach =
-      await User.create({
-
-        fullname,
-
-        email:
-          email.trim().toLowerCase(),
-
-        phone,
-
-        location,
-
-        password:
-          hashedPassword,
-
-        role: "coach",
-
-      });
-
+    const coach = await User.create({
+      fullname,
+      email: email.trim().toLowerCase(),
+      phone,
+      location,
+      role: "coach",
+    });
     // Send Mail
 
-    await sendMail(
+    // await sendMail(
 
-      coach.email,
+    //   coach.email,
 
-      "🎉 Welcome to KikStart",
+    //   "🎉 Welcome to KikStart",
 
-      emailTemplate(
+    //   emailTemplate(
 
-        "Coach Account Created",
+    //     "Coach Account Created",
 
-        `
-        <p>Hello <b>${coach.fullname}</b>,</p>
+    //     `
+    //     <p>Hello <b>${coach.fullname}</b>,</p>
 
-        <p>Your Coach account has been created successfully.</p>
+    //     <p>Your Coach account has been created successfully.</p>
 
-        <p><b>Email :</b> ${coach.email}</p>
+    //     <p><b>Email :</b> ${coach.email}</p>
 
-        <p><b>Password :</b> ${password}</p>
+    //     <p><b>Password :</b> ${password}</p>
 
-        <p>
-        Please login and change your password.
-        </p>
+    //     <p>
+    //     Please login and change your password.
+    //     </p>
 
-        `
-      )
+    //     `
+    //   )
 
-    );
+    // );
 
     res.status(201).json({
 
@@ -703,59 +691,59 @@ exports.getCoachDashboard = async (req, res) => {
         "fullName age profileImage programAssignments"
       );
 
-// ================= RECENT ACTIVITY =================
+    // ================= RECENT ACTIVITY =================
 
 
-const lastChild = await Child.findOne({
-  "programAssignments.coach": coachId
-})
-.sort({
-  createdAt: -1
-})
-.select("fullName createdAt");
+    const lastChild = await Child.findOne({
+      "programAssignments.coach": coachId
+    })
+      .sort({
+        createdAt: -1
+      })
+      .select("fullName createdAt");
 
 
-const lastUpdatedProgram = await Program.findOne({
-  _id: {
-    $in: coach.programs
-  }
-})
-.sort({
-  updatedAt: -1
-})
-.select("title updatedAt");
-
-
-
-const activities = [];
+    const lastUpdatedProgram = await Program.findOne({
+      _id: {
+        $in: coach.programs
+      }
+    })
+      .sort({
+        updatedAt: -1
+      })
+      .select("title updatedAt");
 
 
 
-if(lastChild){
-
-  activities.push({
-
-    title: `${lastChild.fullName} assigned to you`,
-
-    time: lastChild.createdAt
-
-  });
-
-}
+    const activities = [];
 
 
 
-if(lastUpdatedProgram){
+    if (lastChild) {
 
-  activities.push({
+      activities.push({
 
-    title: `${lastUpdatedProgram.title} program updated`,
+        title: `${lastChild.fullName} assigned to you`,
 
-    time: lastUpdatedProgram.updatedAt
+        time: lastChild.createdAt
 
-  });
+      });
 
-}
+    }
+
+
+
+    if (lastUpdatedProgram) {
+
+      activities.push({
+
+        title: `${lastUpdatedProgram.title} program updated`,
+
+        time: lastUpdatedProgram.updatedAt
+
+      });
+
+    }
 
     return res.status(200).json({
 
