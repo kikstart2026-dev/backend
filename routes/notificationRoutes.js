@@ -6,7 +6,9 @@ const {
   getCoachNotifications,
   getUnreadCount,
   markAsRead,
-  markAllAsRead
+  markAllAsRead,
+   deleteNotification,
+  clearNotifications,
 } = require("../controllers/notificationController");
 
 router.get(
