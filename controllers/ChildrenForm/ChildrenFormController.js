@@ -424,7 +424,9 @@ children = children.map((item) => {
     // ===========================
     // RESPONSE
     // ===========================
-
+console.log("Query:", query);
+console.log("Total Children:", totalChildren);
+console.log("Returned:", children.length);
     return res.status(200).json({
       success: true,
 

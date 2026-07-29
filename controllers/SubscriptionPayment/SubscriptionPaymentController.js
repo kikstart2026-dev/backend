@@ -7,8 +7,8 @@ const Subscription =
 const UserSubscription =
     require("../../models/SubscriptionPayment/SubscriptionPaymentModel");
 
-    const exportCSV =
-  require("../../utils/exportCSV");
+const exportCSV =
+    require("../../utils/exportCSV");
 
 
 // ========================================
@@ -18,14 +18,15 @@ exports.getAllPayments = async (req, res) => {
     try {
 
         // PAGINATION
-        const page =
-            Number(req.query.page) || 1;
+        const page = Number(req.query.page) || 1;
 
-        const limit =
-            Number(req.query.limit) || 5;
+        const limit = req.query.limit
+            ? Number(req.query.limit)
+            : null;
 
-        const skip =
-            (page - 1) * limit;
+        const skip = limit
+            ? (page - 1) * limit
+            : 0;
 
         // SEARCH
         const search =
@@ -91,16 +92,17 @@ exports.getAllPayments = async (req, res) => {
                 : -1;
 
         // GET PAYMENTS
-        const payments =
-            await UserSubscription.find(query)
+        let paymentQuery = UserSubscription.find(query)
+            .populate("subscriptionId")
+            .sort(sort);
 
-                .populate("subscriptionId")
-
-                .sort(sort)
-
+        if (limit) {
+            paymentQuery = paymentQuery
                 .skip(skip)
-
                 .limit(limit);
+        }
+
+        const payments = await paymentQuery;
 
         // TOTAL COUNT
         const total =
@@ -143,8 +145,9 @@ exports.getAllPayments = async (req, res) => {
 
             page,
 
-            totalPages:
-                Math.ceil(total / limit),
+            totalPages: limit
+                ? Math.ceil(total / limit)
+                : 1,
         });
 
     } catch (error) {
@@ -653,38 +656,38 @@ exports.getMonthlyPlanRevenue = async (req, res) => {
 
 
 exports.exportPaymentsCSV = async (req, res) => {
-  try {
-    const payments = await UserSubscription.find({
-      status: "captured",
-    })
-      .populate("subscriptionId")
-      .sort({ createdAt: -1 });
+    try {
+        const payments = await UserSubscription.find({
+            status: "captured",
+        })
+            .populate("subscriptionId")
+            .sort({ createdAt: -1 });
 
-    const data = payments.map((item) => ({
-      Name: item.fullname,
-      Email: item.email,
-      Phone: item.phone,
-      PlanName: item.planName,
-      Amount: item.amount,
-      PaymentId: item.payment_id,
-      OrderId: item.order_id,
-      Status: item.status,
-      Method: item.method,
-      Currency: item.currency,
-      PaymentDate: item.paymentDate,
-      ExpireDate: item.expireDate,
-      CreatedAt: item.createdAt,
-    }));
+        const data = payments.map((item) => ({
+            Name: item.fullname,
+            Email: item.email,
+            Phone: item.phone,
+            PlanName: item.planName,
+            Amount: item.amount,
+            PaymentId: item.payment_id,
+            OrderId: item.order_id,
+            Status: item.status,
+            Method: item.method,
+            Currency: item.currency,
+            PaymentDate: item.paymentDate,
+            ExpireDate: item.expireDate,
+            CreatedAt: item.createdAt,
+        }));
 
-    exportCSV(
-      data,
-      "payments",
-      res
-    );
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+        exportCSV(
+            data,
+            "payments",
+            res
+        );
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
 };
